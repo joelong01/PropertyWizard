@@ -17,8 +17,24 @@ namespace PropertyWizard
 		string _ClassType = "";
 		string _Default = "";		
 		
-		bool _DependencyProperty = false;
+		bool _isDependencyProperty = false;
 		bool _ChangeNotification = false;
+		bool _HasSetter = true;
+		public bool HasSetter
+		{
+			get
+			{
+				return _HasSetter;
+			}
+			set
+			{
+				if (_HasSetter != value)
+				{
+					_HasSetter = value;
+					NotifyPropertyChanged();
+				}
+			}
+		}
 
 		public string FieldName
 		{
@@ -30,7 +46,7 @@ namespace PropertyWizard
 			{
 				if (_FieldName != value)
 				{
-					_FieldName = value;
+					_FieldName = value.Trim();
 					NotifyPropertyChanged();
 				}
 			}
@@ -50,17 +66,17 @@ namespace PropertyWizard
 				}
 			}
 		}
-		public bool DependencyProperty
+		public bool IsDependencyProperty
 		{
 			get
 			{
-				return _DependencyProperty;
+				return _isDependencyProperty;
 			}
 			set
 			{
-				if (_DependencyProperty != value)
+				if (_isDependencyProperty != value)
 				{
-					_DependencyProperty = value;
+					_isDependencyProperty = value;
 					NotifyPropertyChanged();
 				}
 			}
@@ -75,7 +91,7 @@ namespace PropertyWizard
 			{
 				if (_Default != value)
 				{
-					_Default = value;
+					_Default = value.Trim();
 					NotifyPropertyChanged();
 				}
 			}
@@ -90,7 +106,7 @@ namespace PropertyWizard
 			{
 				if (_ClassType != value)
 				{
-					_ClassType = value;
+					_ClassType = value.Trim();
 					NotifyPropertyChanged();
 				}
 			}
@@ -105,7 +121,7 @@ namespace PropertyWizard
 			{
 				if (_PropertyType != value)
 				{
-					_PropertyType = value;
+					_PropertyType = value.Trim();
 					NotifyPropertyChanged();
 				}
 			}
@@ -120,7 +136,11 @@ namespace PropertyWizard
 			{
 				if (_PropertyName != value)
 				{
-					_PropertyName = value;
+					_PropertyName = value.Trim();
+					if (FieldName == "" && _PropertyName.Length > 0)
+					{
+						FieldName = "_" + char.ToLower(_PropertyName[0]) + _PropertyName.Substring(1);
+					}
 					NotifyPropertyChanged();
 				}
 			}
@@ -136,7 +156,7 @@ namespace PropertyWizard
 			{
 				if (_UserCode != value)
 				{
-					_UserCode = value;
+					_UserCode = value.Trim();
 					NotifyPropertyChanged();
 				}
 			}

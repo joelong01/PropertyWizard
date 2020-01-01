@@ -9,88 +9,41 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
     <Control.Resources>
-        <Style TargetType="TextBlock" x:Key="TextBlockStyle">
-            <Setter Property="Margin" Value="5" />
-            <Setter Property="FontFamily" Value="Segoe UI" />
-            <Setter Property="FontSize" Value="22"/>
-            <Setter Property="HorizontalAlignment" Value="Right" />
-            <Setter Property="FlowDirection" Value="LeftToRight"/>
-        </Style>
-        <Style TargetType="TextBox" x:Key="TextBoxStyle">
-            <Setter Property="Margin" Value="0" />
-            <Setter Property="FontFamily" Value="Segoe UI" />
-            <Setter Property="FontSize" Value="22"/>
+        
+            <Style TargetType="TextBlock" x:Key="TextBlockStyle">
+                <Setter Property="Margin" Value="5" />
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="HorizontalAlignment" Value="Right" />
+                <Setter Property="FlowDirection" Value="LeftToRight"/>
+            </Style>
+            <Style TargetType="TextBox" x:Key="TextBoxStyle">
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="IsSpellCheckEnabled" Value="False"/>
+            </Style>
+            <Style TargetType="TextBox" x:Key="MLTextBoxStyle">
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="FontFamily" Value="Consolas" />
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="AcceptsReturn" Value="True"/>
+                <Setter Property="IsSpellCheckEnabled" Value="False"/>
+                <Setter Property="Background" Value="DimGray"/>
 
-        </Style>
-        <Style TargetType="TextBox" x:Key="MLTextBoxStyle">
-            <Setter Property="Margin" Value="0" />
-            <Setter Property="FontFamily" Value="Consolas" />
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="AcceptsReturn" Value="True"/>
-            <Setter Property="IsSpellCheckEnabled" Value="False"/>
-            <Setter Property="Background" Value="DimGray"/>
-
-        </Style>
-        <Style TargetType="CheckBox" x:Key="CheckBoxStyle">
-            <Setter Property="Margin" Value="30,0,0,0" />
-            <Setter Property="FontFamily" Value="Segoe UI" />
-            <Setter Property="FontSize" Value="22"/>
-            <Setter Property="FlowDirection" Value="RightToLeft"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Padding" Value="4, -2, 0, 0" />
-        </Style>
-        <DataTemplate  x:Key="PlayerResourceCountItem" x:DataType="local:PropertyModel">
-            <Viewbox MaxHeight="120" HorizontalAlignment="Left"  VerticalAlignment="Center" >
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="160" />
-                        <ColumnDefinition Width="300" />
-                        <ColumnDefinition Width="150" />
-                        <ColumnDefinition Width="300" />
-                        <ColumnDefinition Width="300" />
-                        <ColumnDefinition Width="300" />
-                        <ColumnDefinition Width="*" />
+            </Style>
+            <Style TargetType="CheckBox" x:Key="CheckBoxStyle">
+                <Setter Property="Margin" Value="0,0,0,0" />
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FlowDirection" Value="RightToLeft"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="4, -2, 0, 0" />
+            </Style>
 
 
-                        <ColumnDefinition Width="*" />
-
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="15" />
-                        <RowDefinition Height="45" />
-                        <RowDefinition Height="5" />
-                        <RowDefinition Height="45" />
-                        <RowDefinition Height="15" />
-                    </Grid.RowDefinitions>
-                    <Border Grid.Row="0" Grid.Column="0" BorderThickness="0" Grid.RowSpan="5" Grid.ColumnSpan="6" BorderBrush="Red"/>
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Property Name" Style="{StaticResource TextBlockStyle}" />
-                    <TextBox   Grid.Row="1" Grid.Column="1" Text="{x:Bind PropertyName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBoxStyle}" GotFocus="TextBox_GotFocus" LostFocus="TextBox_LostFocus"/>
-
-                    <TextBlock Grid.Row="1" Grid.Column="2" Text="Field Name" Style="{StaticResource TextBlockStyle}"/>
-                    <TextBox   Grid.Row="1" Grid.Column="3" Text="{x:Bind FieldName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBoxStyle}" GotFocus="TextBox_GotFocus" LostFocus="TextBox_LostFocus"/>
-
-                    <TextBlock Grid.Row="1" Grid.Column="4" Text="Property Type" Style="{StaticResource TextBlockStyle}" />
-                    <TextBox   Grid.Row="1" Grid.Column="5" Text="{x:Bind PropertyType , Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBoxStyle}" Grid.ColumnSpan="2" GotFocus="TextBox_GotFocus" LostFocus="TextBox_LostFocus"/>
-
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Class Type" Style="{StaticResource TextBlockStyle}"/>
-                    <TextBox   Grid.Row="3" Grid.Column="1" Text="{x:Bind ClassType , Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBoxStyle}" GotFocus="TextBox_GotFocus" LostFocus="TextBox_LostFocus"/>
-                    <TextBlock Grid.Row="3" Grid.Column="2" Text="Default" Style="{StaticResource TextBlockStyle}"/>
-                    <TextBox   Grid.Row="3" Grid.Column="3" Text="{x:Bind Default , Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBoxStyle}" GotFocus="TextBox_GotFocus" LostFocus="TextBox_LostFocus"/>
-
-                    <CheckBox Name="ChangeNotification" Grid.Row="3" Grid.Column="4" Grid.RowSpan="2" Content="Change Notification" 
-                              IsChecked="{x:Bind ChangeNotification, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                              Checked="CheckBox_Checked"
-                              Unchecked="CheckBox_Unchecked"    
-                              Style="{StaticResource CheckBoxStyle}"/>
-                    <CheckBox Name="DependencyProperty" Grid.Row="3" Grid.Column="5" Grid.RowSpan="2" Content="Dependency Property" 
-                              IsChecked="{x:Bind DependencyProperty, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                              Checked="CheckBox_Checked"
-                              Unchecked="CheckBox_Unchecked"    
-                              Style="{StaticResource CheckBoxStyle}"/>
-
-
-                </Grid>
-            </Viewbox>
+        <DataTemplate  x:Key="PlayerResourceCountItem" x:DataType="local:PropertyModel" >
+            <local:PropertyViewCtrl Model="{x:Bind}"/>
         </DataTemplate>
     </Control.Resources>
     <Grid>
@@ -169,8 +122,8 @@
         <ListView Name="_listView" Grid.Row="1"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowDrop="True" CanDragItems="True" CanReorderItems="True"
                   SelectedItem="{x:Bind SelectedProperty, Mode=TwoWay}" 
                   ItemsSource="{x:Bind Path=PropertyList}" 
-                  ItemTemplate="{StaticResource ResourceKey=PlayerResourceCountItem}" ItemClick="ListView_ItemClicked" SelectionChanged="ListView_SelectionChanged" 
-                  >
+                  ItemTemplate="{StaticResource ResourceKey=PlayerResourceCountItem}" 
+                  ItemClick="ListView_ItemClicked">
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />

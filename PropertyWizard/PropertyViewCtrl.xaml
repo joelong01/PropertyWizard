@@ -1,0 +1,115 @@
+﻿<UserControl
+    x:Class="PropertyWizard.PropertyViewCtrl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PropertyWizard"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    MinWidth="500"
+    d:DesignHeight="150"
+    d:DesignWidth="600">
+    <Control.Resources>
+        <Style TargetType="TextBlock" x:Key="TextBlockStyle">
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="FlowDirection" Value="LeftToRight"/>
+        </Style>
+        <Style TargetType="TextBox" x:Key="TextBoxStyle">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="IsSpellCheckEnabled" Value="False"/>
+        </Style>
+        <Style TargetType="TextBox" x:Key="MLTextBoxStyle">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="IsSpellCheckEnabled" Value="False"/>
+            <Setter Property="Background" Value="DimGray"/>
+
+        </Style>
+        <Style TargetType="CheckBox" x:Key="CheckBoxStyle">
+            <Setter Property="Margin" Value="0,0,0,0" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FlowDirection" Value="RightToLeft"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="4, -2, 0, 0" />
+        </Style>
+    </Control.Resources>
+    <!--<Viewbox MaxHeight="120" HorizontalAlignment="Left"  VerticalAlignment="Center" >-->
+    <Grid Margin="5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="120" />
+            <ColumnDefinition Width="10*" />
+            <ColumnDefinition Width="90" />
+            <ColumnDefinition Width="10*" />
+            <ColumnDefinition Width="110" />
+            <ColumnDefinition Width="10*" />
+
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="5" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="5" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="5" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Border Grid.Row="0" Grid.Column="0" BorderThickness="0" Grid.RowSpan="5" Grid.ColumnSpan="6" BorderBrush="Red"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Property Name" Style="{StaticResource TextBlockStyle}" />
+        <TextBox   Grid.Row="1" Grid.Column="1" 
+                               GotFocus="TextBox_GotFocus"
+                               Text="{x:Bind Model.PropertyName, Mode=TwoWay}" 
+                               Style="{StaticResource TextBoxStyle}"  />
+
+        <TextBlock Grid.Row="1" Grid.Column="2" Text="Field Name" Style="{StaticResource TextBlockStyle}"/>
+        <TextBox   Grid.Row="1" Grid.Column="3" 
+                               Text="{x:Bind Model.FieldName, Mode=TwoWay}" 
+                               Style="{StaticResource TextBoxStyle}" 
+                               IsEnabled="{x:Bind Model.IsDependencyProperty, Converter={StaticResource NotBoolConverter}, Mode=OneWay}"
+                               GotFocus="TextBox_GotFocus" 
+                               />
+
+        <TextBlock Grid.Row="1" Grid.Column="4" Text="Property Type" Style="{StaticResource TextBlockStyle}" />
+        <TextBox   Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="2"
+                               Text="{x:Bind Model.PropertyType , Mode=TwoWay}"
+                               Style="{StaticResource TextBoxStyle}"  
+                               GotFocus="TextBox_GotFocus" />
+
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Class Type" Style="{StaticResource TextBlockStyle}"/>
+        <TextBox   Grid.Row="3" Grid.Column="1" 
+                               Text="{x:Bind Model.ClassType , Mode=TwoWay}" 
+                               IsEnabled="{x:Bind Model.IsDependencyProperty, Mode=OneWay}"
+                               Style="{StaticResource TextBoxStyle}" 
+                               GotFocus="TextBox_GotFocus" />
+
+        <TextBlock Grid.Row="3" Grid.Column="2" Text="Default" Style="{StaticResource TextBlockStyle}"/>
+        <TextBox   Grid.Row="3" Grid.Column="3" 
+                               Text="{x:Bind Model.Default , Mode=TwoWay}" 
+                               Style="{StaticResource TextBoxStyle}" 
+                               GotFocus="TextBox_GotFocus" />
+        
+        <CheckBox Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" Content="Change Notification" Tag="ChangeNotification"
+                              IsChecked="{x:Bind Model.ChangeNotification, Mode=TwoWay}"
+                              Style="{StaticResource CheckBoxStyle}"/>
+
+
+        <CheckBox Grid.Row="5" Grid.Column="2" Grid.ColumnSpan="3" Content="Dependency Property" 
+                              IsChecked="{x:Bind Model.IsDependencyProperty, Mode=TwoWay,  Converter={StaticResource NullableBoolToBoolConverter}}" 
+                              Style="{StaticResource CheckBoxStyle}"/>
+
+        <CheckBox Grid.Row="5" Grid.Column="4" Grid.ColumnSpan="3" Content="Setter" 
+                              IsChecked="{x:Bind Model.HasSetter, Mode=TwoWay,  Converter={StaticResource NullableBoolToBoolConverter}}" 
+                              Style="{StaticResource CheckBoxStyle}"/>
+
+
+
+
+    </Grid>
+    <!--</Viewbox>-->
+</UserControl>

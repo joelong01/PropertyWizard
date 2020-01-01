@@ -29,11 +29,30 @@ namespace PropertyWizard
 
     public sealed partial class MainPage : Page
     {
-        ObservableCollection<PropertyModel> PropertyList = new ObservableCollection<PropertyModel>();
-        public static readonly DependencyProperty SelectedPropertyProperty = DependencyProperty.Register("SelectedProperty", typeof(PropertyModel), typeof(MainPage), new PropertyMetadata(null));
+        readonly ObservableCollection<PropertyModel> PropertyList = new ObservableCollection<PropertyModel>();
+
         public static readonly DependencyProperty PropertiesAsTextProperty = DependencyProperty.Register("PropertiesAsText", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty AllPropertiesAsTextProperty = DependencyProperty.Register("AllPropertiesAsText", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty SetAllChoiceProperty = DependencyProperty.Register("SetAllChoice", typeof(string), typeof(MainPage), new PropertyMetadata("", SetAllChoiceChanged));
+        public static readonly DependencyProperty SelectedPropertyProperty = DependencyProperty.Register("SelectedProperty", typeof(PropertyModel), typeof(MainPage), new PropertyMetadata(null, SelectedPropertyChanged));
+        public PropertyModel SelectedProperty
+        {
+            get => (PropertyModel)GetValue(SelectedPropertyProperty);
+            set => SetValue(SelectedPropertyProperty, value);
+        }
+        private static void SelectedPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var depPropClass = d as MainPage;
+            var depPropValue = (PropertyModel)e.NewValue;
+            depPropClass?.SetSelectedProperty(depPropValue);
+        }
+        private void SetSelectedProperty(PropertyModel model)
+        {
+            if (model == null) return;
+            PropertiesAsText = GenerateProperty(model);
+            // do not call GenerateAllProperties() as all we did is change the list selection and it will already have the full prop list
+        }
+
         public string SetAllChoice
         {
             get => (string)GetValue(SetAllChoiceProperty);
@@ -61,18 +80,44 @@ namespace PropertyWizard
             get => (string)GetValue(PropertiesAsTextProperty);
             set => SetValue(PropertiesAsTextProperty, value);
         }
-        public PropertyModel SelectedProperty
-        {
-            get => (PropertyModel)GetValue(SelectedPropertyProperty);
-            set => SetValue(SelectedPropertyProperty, value);
-        }
+
         public MainPage()
         {
             this.InitializeComponent();
-
+            PropertyList.CollectionChanged += PropertyList_CollectionChanged;
 
         }
 
+        private void PropertyList_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            if (e.NewItems != null)
+            {
+                string defaultClassType = "";
+                if (PropertyList.Count > 0)
+                {
+                    defaultClassType = PropertyList[0].ClassType;
+                }
+                foreach (PropertyModel model in e.NewItems)
+                {
+                    model.PropertyChanged += Model_PropertyChanged;
+                    if (model.ClassType == "" && model.IsDependencyProperty)
+                    {
+                        model.ClassType = defaultClassType;
+                    }
+                }
+            }
+            if (e.OldItems != null)
+            {
+                foreach (PropertyModel model in e.OldItems)
+                {
+                    model.PropertyChanged -= Model_PropertyChanged;
+                }
+            }
+        }
+
+
+        //
+        //  make sure if you click inside a textbox that the list item gets selected
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
         {
             Debug.WriteLine("TextBox_GotFocus");
@@ -80,36 +125,16 @@ namespace PropertyWizard
             var lv = FindVisualParent<ListViewItem>(sender as TextBox);
             lv.IsSelected = true;
         }
-        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            Debug.WriteLine("TextBox_LostFocus");
-            if (this.SelectedProperty == null)
-            {
-                Debug.WriteLine("SelectedProperty is null");
-                return;
-            }
 
-            PropertiesAsText = GenerateProperty(this.SelectedProperty);
-            GenerateAllProperties();
-        }
 
         private void ListView_ItemClicked(object sender, ItemClickEventArgs e)
         {
             PropertyModel model = e.ClickedItem as PropertyModel;
             Debug.WriteLine("ListView_ItemClicked");
-            GenerateProperty(model);
+            PropertiesAsText = GenerateProperty(model);
         }
 
-        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            Debug.WriteLine("ListView_SelectionChanged");
-            if (e?.AddedItems.Count > 0)
-            {
-                PropertyModel model = e.AddedItems[0] as PropertyModel;
-                PropertiesAsText = GenerateProperty(model);
-                GenerateAllProperties();
-            }
-        }
+
 
         private void GenerateAllProperties()
         {
@@ -129,7 +154,7 @@ namespace PropertyWizard
 
 
             StringBuilder sb;
-            if (model.DependencyProperty)
+            if (model.IsDependencyProperty)
             {
                 sb = new StringBuilder(Templates.DependencProperty);
                 sb.Replace("__CLASS__", model.ClassType);
@@ -146,7 +171,7 @@ namespace PropertyWizard
             sb.Replace("__FIELDNAME__", model.FieldName);
             if (model.ChangeNotification)
             {
-                if (model.DependencyProperty)
+                if (model.IsDependencyProperty)
                 {
                     string changeNotificationFunction = ", " + model.PropertyName + "Changed";
                     sb.Replace("__DEPENDENCY_PROP_NOTIFY__", changeNotificationFunction);
@@ -164,7 +189,7 @@ namespace PropertyWizard
             }
             else
             {
-                if (model.DependencyProperty)
+                if (model.IsDependencyProperty)
                 {
                     sb.Replace("__DEPENDENCY_PROP_NOTIFY__", "");
                 }
@@ -184,7 +209,7 @@ namespace PropertyWizard
         {
             UIElement parent = element; while (parent != null)
             {
-                T correctlyTyped = parent as T; if (correctlyTyped != null)
+                if (parent is T correctlyTyped)
                 {
                     return correctlyTyped;
                 }
@@ -199,39 +224,34 @@ namespace PropertyWizard
             PropertyList.Add(model);
             SelectedProperty = model;
         }
-
-        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        private void OnDeleteCurrent(object sender, RoutedEventArgs e)
         {
-            if (this.SelectedProperty == null)
+            if (SelectedProperty != null)
             {
-                Debug.WriteLine("SelectedProperty is null");
-                return;
+                PropertyList.Remove(SelectedProperty);
             }
-            CheckBox cb = e.OriginalSource as CheckBox;
-            if (cb.Name == "ChangeNotification")
-                SelectedProperty.ChangeNotification = (bool)cb.IsChecked; // databinding happens *after* this call.  wtf??
-            else
-                SelectedProperty.DependencyProperty = (bool)cb.IsChecked;
-            PropertiesAsText = GenerateProperty(this.SelectedProperty);
-            GenerateAllProperties();
-
         }
 
-        private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
+
+        private void Model_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (this.SelectedProperty == null)
+            PropertyModel model = sender as PropertyModel;
+            if (model == null) return;
+
+            if (e.PropertyName == "IsDependencyProperty")
             {
-                Debug.WriteLine("SelectedProperty is null");
-                return;
+                if (model.IsDependencyProperty && model.ClassType == "" && PropertyList[0].ClassType != "")
+                {
+                    model.ClassType = PropertyList[0].ClassType;
+                }
             }
-            CheckBox cb = e.OriginalSource as CheckBox;
-            if (cb.Name == "ChangeNotification")
-                SelectedProperty.ChangeNotification = (bool)cb.IsChecked; // databinding happens *after* this call.  wtf??
-            else
-                SelectedProperty.DependencyProperty = (bool)cb.IsChecked;
-            PropertiesAsText = GenerateProperty(this.SelectedProperty);
+            PropertiesAsText = GenerateProperty(model);
+
             GenerateAllProperties();
         }
+
+
+
 
         ///
         /// Assumptions:
@@ -246,6 +266,14 @@ namespace PropertyWizard
         /// 
         private void OnParse(object sender, RoutedEventArgs e)
         {
+            //
+            //  TODO
+            //  1. fix the Default so it can have parenthesis in it
+            //  2. get all the code inside a setter
+            //  3. get all the code inside a getter?
+            //  4. optionally generate the set code
+
+
             PropertyList.Clear();
             string toParse = AllPropertiesAsText.Replace("\t", ""); // no tabs
             toParse = toParse.Replace("  ", ""); // no double spaces
@@ -267,7 +295,7 @@ namespace PropertyWizard
                     if (tokens.Length < 4) continue;
                     var parsedModel = new PropertyModel()
                     {
-                        DependencyProperty = true
+                        IsDependencyProperty = true
                     };
 
                     parsedModel.PropertyName = GetStringBetween(tokens[0], "\"", "\"");
@@ -330,7 +358,6 @@ namespace PropertyWizard
                     getLoc = line.IndexOf("get");
                     if (getLoc != -1)
                     {
-                        tokens = line.Split(" ", StringSplitOptions.RemoveEmptyEntries);
 
                         var next = lines[i].Trim() + lines[i + 1].Trim();
 
@@ -388,7 +415,7 @@ namespace PropertyWizard
                 //
                 //  looking for __TYPE__ __FIELDNAME__ = __DEFAULT__;
                 //
-                if (prop.DependencyProperty) continue;
+                if (prop.IsDependencyProperty) continue;
                 var index = toParse.IndexOf(prop.FieldName + "=");
                 if (index != -1)
                 {
@@ -404,6 +431,7 @@ namespace PropertyWizard
             }
             if (PropertyList.Count > 0)
             {
+                GenerateAllProperties();
                 SelectedProperty = PropertyList[0];
             }
         }
@@ -441,13 +469,6 @@ namespace PropertyWizard
             var ret = toParse.Substring(startPos + start.Length, endPos - end.Length - startPos - start.Length + 1);
             return ret;
         }
-        private void OnDeleteCurrent(object sender, RoutedEventArgs e)
-        {
-            if (SelectedProperty != null)
-            {
-                PropertyList.Remove(SelectedProperty);
-            }
-        }
 
 
         public async Task<string> GetUserString(string title, string defaultText)
@@ -479,7 +500,7 @@ namespace PropertyWizard
                     {
                         foreach (var prop in PropertyList)
                         {
-                            prop.DependencyProperty = true;
+                            prop.IsDependencyProperty = true;
                         }
                     }
                     break;
@@ -487,16 +508,17 @@ namespace PropertyWizard
                     {
                         foreach (var prop in PropertyList)
                         {
-                            prop.DependencyProperty = false;
+                            prop.IsDependencyProperty = false;
                         }
                     }
                     break;
 
                 case "Default Field Names":
                     {
+                        
                         foreach (var prop in PropertyList)
                         {
-                            prop.FieldName = "_" + prop.PropertyName;
+                            prop.FieldName = "_" + char.ToLower(prop.PropertyName[0]) + prop.PropertyName.Substring(1);;
                         }
                     }
 
@@ -517,5 +539,7 @@ namespace PropertyWizard
             }
             GenerateAllProperties();
         }
+
+
     }
 }
