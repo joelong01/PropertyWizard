@@ -145,18 +145,51 @@ namespace PropertyWizard
 				}
 			}
 		}
-		string _UserCode = "";
-		public string UserCode
+		string _UserSetCode = "";
+		public string UserSetCode
 		{
 			get
 			{
-				return _UserCode;
+				return _UserSetCode;
 			}
 			set
 			{
-				if (_UserCode != value)
+				if (_UserSetCode != value)
 				{
-					_UserCode = value.Trim();
+					_UserSetCode = value.Trim();
+					NotifyPropertyChanged();
+				}
+			}
+		}
+
+		string _ChangeNotificationFunction = "";
+		public string ChangeNotificationFunction
+		{
+			get
+			{
+				return _ChangeNotificationFunction;
+			}
+			set
+			{
+				if (_ChangeNotificationFunction != value)
+				{
+					_ChangeNotificationFunction = value.Trim();
+					NotifyPropertyChanged();
+				}
+			}
+		}
+		string _UserGetCode = "";
+		public string UserGetCode
+		{
+			get
+			{
+				return _UserGetCode;
+			}
+			set
+			{
+				if (_UserGetCode != value)
+				{
+					_UserGetCode = value;
 					NotifyPropertyChanged();
 				}
 			}
@@ -167,7 +200,7 @@ namespace PropertyWizard
 		public event PropertyChangedEventHandler PropertyChanged;
         private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
         {
-			Debug.WriteLine($"NotifyPropertyChanged: [{propertyName}={this.GetType().GetProperty(propertyName).GetValue(this)}]");
+			 //  Debug.WriteLine($"NotifyPropertyChanged: [{propertyName}={this.GetType().GetProperty(propertyName).GetValue(this)}]");
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }

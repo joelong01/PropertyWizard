@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -38,7 +39,23 @@ namespace PropertyWizard
 
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
         {
+            Debug.WriteLine("TextBox_GotFocus");
+            ((TextBox)sender).SelectAll();
+            var lv = FindVisualParent<ListViewItem>(sender as TextBox);
+            lv.IsSelected = true;
+        }
 
+        public static T FindVisualParent<T>(UIElement element) where T : UIElement
+        {
+            UIElement parent = element; while (parent != null)
+            {
+                if (parent is T correctlyTyped)
+                {
+                    return correctlyTyped;
+                }
+                parent = VisualTreeHelper.GetParent(parent) as UIElement;
+            }
+            return null;
         }
     }
 }

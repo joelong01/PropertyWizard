@@ -9,8 +9,10 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
     <Control.Resources>
+        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver"
+                 Color="{ThemeResource SystemAccentColor}"/>
         
-            <Style TargetType="TextBlock" x:Key="TextBlockStyle">
+        <Style TargetType="TextBlock" x:Key="TextBlockStyle">
                 <Setter Property="Margin" Value="5" />
                 <Setter Property="FontFamily" Value="Segoe UI" />
                 <Setter Property="FontSize" Value="16"/>
@@ -30,8 +32,10 @@
                 <Setter Property="AcceptsReturn" Value="True"/>
                 <Setter Property="IsSpellCheckEnabled" Value="False"/>
                 <Setter Property="Background" Value="DimGray"/>
+                <Setter Property="BorderBrush" Value="{StaticResource SystemControlHighlightAccentBrush}"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible" />
 
-            </Style>
+        </Style>
             <Style TargetType="CheckBox" x:Key="CheckBoxStyle">
                 <Setter Property="Margin" Value="0,0,0,0" />
                 <Setter Property="FontFamily" Value="Segoe UI" />
@@ -130,16 +134,32 @@
                 </Style>
             </ListView.ItemContainerStyle>
         </ListView>
-        <Grid Grid.Row="3">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <controls:GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" />
-            <TextBox Name="_txtProperties" Text="{x:Bind PropertiesAsText, Mode=TwoWay}" Grid.Row="3" Style="{StaticResource MLTextBoxStyle}"/>
-            <TextBox Name="_txtAllProperties" Grid.Column="2" Text="{x:Bind AllPropertiesAsText, Mode=TwoWay}" Grid.Row="3" Style="{StaticResource MLTextBoxStyle}"/>
-        </Grid>
+        <controls:TabView Grid.Row="3">
+            <controls:TabViewItem Header="Main View">
+                <Grid >
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <controls:GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" />
+                    <TextBox Name="_txtProperties" Text="{x:Bind PropertiesAsText, Mode=TwoWay}" Grid.Row="3" Style="{StaticResource MLTextBoxStyle}" GotFocus="TextBox_GotFocus"/>
+                    <TextBox Name="_txtAllProperties" Grid.Column="2" Text="{x:Bind AllPropertiesAsText, Mode=TwoWay}" Grid.Row="3" Style="{StaticResource MLTextBoxStyle}" GotFocus="TextBox_GotFocus" />
+                </Grid>
+            </controls:TabViewItem>
+            <controls:TabViewItem Header="With Properties">
+                <TextBox Text="{x:Bind AllCode, Mode=TwoWay}" Grid.Row="3" Style="{StaticResource MLTextBoxStyle}" GotFocus="TextBox_GotFocus"/>
+            </controls:TabViewItem>
+            <controls:TabViewItem Header="Without Properies">
+                <TextBox Text="{x:Bind CodeNoProperties, Mode=TwoWay}" Grid.Row="3" Style="{StaticResource MLTextBoxStyle}" GotFocus="TextBox_GotFocus"/>
+            </controls:TabViewItem>
+            <controls:TabViewItem Header="Parse me">
+                <TextBox Text="{x:Bind ParseCode, Mode=TwoWay}" Grid.Row="3" Style="{StaticResource MLTextBoxStyle}" GotFocus="TextBox_GotFocus"/>
+            </controls:TabViewItem>
+
+
+        </controls:TabView>
+       
 
     </Grid>
 </Page>

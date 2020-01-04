@@ -1,4 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿/* this means we have something like this:
+                     
+                        public Foo()
+                        {
+                        }
+
+                    */
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -29,12 +36,73 @@ namespace PropertyWizard
 
     public sealed partial class MainPage : Page
     {
-        readonly ObservableCollection<PropertyModel> PropertyList = new ObservableCollection<PropertyModel>();
+        //  in a comment!
+        //private void SetTest(string value)
+        //{
+
+        //}
+        /*
+         * in a comment!!
+        private void SetTest(string value)
+        {
+
+        }
+        */
+        private ObservableCollection<PropertyModel> PropertyList { get; } = new ObservableCollection<PropertyModel>();
+        public static readonly DependencyProperty TestProperty = DependencyProperty.Register("Test", typeof(string), typeof(MainPage), new PropertyMetadata(",", TestChanged));
+        public string Test
+        {
+            get => (string)GetValue(TestProperty);
+            set => SetValue(TestProperty, value);
+        }
+        private static void TestChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var depPropClass = d as MainPage;
+            var depPropValue = (string)e.NewValue;
+            depPropClass?.SetTest(depPropValue);
+        }
+        //  in a comment!
+        //private void SetTest(string value)
+        //{
+
+        //}
+        /*
+         * in a comment!!
+        private void SetTest(string value)
+        {
+
+        }
+        */
+        private void SetTest(string value)
+        {
+            Debug.Print($"Test changed to: {value}");
+        }
+
+        private bool _parsing = false;
 
         public static readonly DependencyProperty PropertiesAsTextProperty = DependencyProperty.Register("PropertiesAsText", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty AllPropertiesAsTextProperty = DependencyProperty.Register("AllPropertiesAsText", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty SetAllChoiceProperty = DependencyProperty.Register("SetAllChoice", typeof(string), typeof(MainPage), new PropertyMetadata("", SetAllChoiceChanged));
         public static readonly DependencyProperty SelectedPropertyProperty = DependencyProperty.Register("SelectedProperty", typeof(PropertyModel), typeof(MainPage), new PropertyMetadata(null, SelectedPropertyChanged));
+        public static readonly DependencyProperty AllCodeProperty = DependencyProperty.Register("AllCode", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public static readonly DependencyProperty CodeNoPropertiesProperty = DependencyProperty.Register("CodeNoProperties", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public static readonly DependencyProperty ParseCodeProperty = DependencyProperty.Register("ParseCode", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public string ParseCode
+        {
+            get => (string)GetValue(ParseCodeProperty);
+            set => SetValue(ParseCodeProperty, value);
+        }
+        public string CodeNoProperties
+        {
+            get => (string)GetValue(CodeNoPropertiesProperty);
+            set => SetValue(CodeNoPropertiesProperty, value);
+        }
+        public string AllCode
+        {
+            get => (string)GetValue(AllCodeProperty);
+            set => SetValue(AllCodeProperty, value);
+        }
+
         public PropertyModel SelectedProperty
         {
             get => (PropertyModel)GetValue(SelectedPropertyProperty);
@@ -113,18 +181,14 @@ namespace PropertyWizard
                     model.PropertyChanged -= Model_PropertyChanged;
                 }
             }
+
+            GenerateAllProperties();
         }
 
 
         //
         //  make sure if you click inside a textbox that the list item gets selected
-        private void TextBox_GotFocus(object sender, RoutedEventArgs e)
-        {
-            Debug.WriteLine("TextBox_GotFocus");
-            ((TextBox)sender).SelectAll();
-            var lv = FindVisualParent<ListViewItem>(sender as TextBox);
-            lv.IsSelected = true;
-        }
+
 
 
         private void ListView_ItemClicked(object sender, ItemClickEventArgs e)
@@ -138,6 +202,7 @@ namespace PropertyWizard
 
         private void GenerateAllProperties()
         {
+            if (_parsing) return; 
             StringBuilder sb = new StringBuilder();
             foreach (var prop in PropertyList)
             {
@@ -150,7 +215,7 @@ namespace PropertyWizard
         private string GenerateProperty(PropertyModel model)
         {
             var json = JsonConvert.SerializeObject(model, Formatting.Indented);
-            Debug.WriteLine(json);
+            // Debug.WriteLine(json);
 
 
             StringBuilder sb;
@@ -178,7 +243,7 @@ namespace PropertyWizard
                     string depNotify = Templates.DependencyNotify.Replace("__PROPERTYNAME__", model.PropertyName);
                     depNotify = depNotify.Replace("__TYPE__", model.PropertyType);
                     depNotify = depNotify.Replace("__CLASS__", model.ClassType);
-                    depNotify = depNotify.Replace("__USER_CODE__", model.UserCode);
+                    depNotify = depNotify.Replace("__USER_CODE__", model.UserSetCode);
 
                     sb.Append(depNotify);
                 }
@@ -205,18 +270,7 @@ namespace PropertyWizard
 
 
 
-        public static T FindVisualParent<T>(UIElement element) where T : UIElement
-        {
-            UIElement parent = element; while (parent != null)
-            {
-                if (parent is T correctlyTyped)
-                {
-                    return correctlyTyped;
-                }
-                parent = VisualTreeHelper.GetParent(parent) as UIElement;
-            }
-            return null;
-        }
+
 
         private void Button_AddNew(object sender, RoutedEventArgs e)
         {
@@ -253,212 +307,30 @@ namespace PropertyWizard
 
 
 
-        ///
-        /// Assumptions:
-        ///    1. the only thing public in the parsed text is the property name (e.g. fields can be private or unspecified, but not public)
-        ///    2. all properties have a get, but they don't need a set (but we always generate a set)
-        ///    3. the code compiles!
-        ///    4. this code does not handle comments -- any commented out property will also be parsed/added
-        ///    5. User code in dependency property change notification functions is preserved
-        ///    6. No user code in get functions!
-        ///    
-        /// NOTE:  if you paste this file into the AllPropertiesAsText TextBox, it will correctly parse out the properties...
-        /// 
-        private void OnParse(object sender, RoutedEventArgs e)
-        {
-            //
-            //  TODO
-            //  1. fix the Default so it can have parenthesis in it
-            //  2. get all the code inside a setter
-            //  3. get all the code inside a getter?
-            //  4. optionally generate the set code
 
-
-            PropertyList.Clear();
-            string toParse = AllPropertiesAsText.Replace("\t", ""); // no tabs
-            toParse = toParse.Replace("  ", ""); // no double spaces
-            toParse = toParse.Replace("\n", "");
-
-            var properties = toParse.Split("public static readonly DependencyProperty", StringSplitOptions.RemoveEmptyEntries);
-            if (properties.Length > 0)
+        /*
+         * Looks like:
+         * 
+         * public __TYPE__ __PROPERTYNAME__
             {
-                //
-                //  we have at least one dependency property
-                foreach (var property in properties)
+                get
                 {
-                    string propString = property.Trim().Replace(" ", "");
-                    if (propString == "") continue; // an errant /r
-                    string depPropDeclaration = GetStringBetween(propString, "DependencyProperty.Register(", ";");
-                    if (depPropDeclaration == "") continue;
-
-                    var tokens = depPropDeclaration.Split(",", StringSplitOptions.RemoveEmptyEntries);
-                    if (tokens.Length < 4) continue;
-                    var parsedModel = new PropertyModel()
-                    {
-                        IsDependencyProperty = true
-                    };
-
-                    parsedModel.PropertyName = GetStringBetween(tokens[0], "\"", "\"");
-                    parsedModel.PropertyType = GetStringBetween(tokens[1], "(", ")");
-                    parsedModel.ClassType = GetStringBetween(tokens[2], "(", ")");
-                    if (tokens.Length == 4)
-                    {
-                        parsedModel.Default = GetStringBetween(tokens[3], "(", ")");
-
-                    }
-                    else if (tokens.Length == 5)
-                    {
-                        parsedModel.Default = tokens[3].Substring("newPropertyMetadata(".Length);
-                        parsedModel.ChangeNotification = true;
-                        parsedModel.UserCode = GetUserCode(toParse, parsedModel.PropertyName);
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"Unexepected token length in dependency property declartion: {depPropDeclaration}");
-                    }
-
-                    PropertyList.Add(parsedModel);
+                    return __FIELDNAME__;
                 }
-            }
-
-            properties = toParse.Split("public", StringSplitOptions.RemoveEmptyEntries);
-            foreach (var property in properties)
-            {
-                var getLoc = property.IndexOf("get");
-                if (getLoc == -1) continue; // not a property -- some other code in the file.  maybe declaration of the field name plus the default, but we'll get those below
-                if (property.IndexOf("GetValue") != -1) continue; // this means it is a dependency property and we parsed it above
-                var lines = property.Split("\r", StringSplitOptions.RemoveEmptyEntries);
-                if (lines.Length == 0) continue; // empty new lines in file
-
-
-
-
-                //
-                //  yes, this is a property
-                PropertyModel parsedModel = new PropertyModel();
-
-
-                var tokens = lines[0].Split(" ", StringSplitOptions.RemoveEmptyEntries);
-                //  the property is in the form public __TYPE__ __PROPERTYNAME__, but "public" has been stripped                    
-                if (tokens.Length != 2)
+                set
                 {
-                    Debug.WriteLine($"Unknown format at line {lines[0]}");
-                    continue;
-                }
-
-                parsedModel.PropertyType = tokens[0].Trim();
-                parsedModel.PropertyName = tokens[1].Trim();
-
-                for (int i = 1; i < lines.Length; i++)
-                {
-                    if (lines[i] == "{" || lines[i] == "}") continue;
-
-                    string line = lines[i];
-
-                    getLoc = line.IndexOf("get");
-                    if (getLoc != -1)
+                    if (value != __FIELDNAME__)
                     {
-
-                        var next = lines[i].Trim() + lines[i + 1].Trim();
-
-                        if (next == "get{")
-                        {
-                            i += 2;
-                            tokens = lines[i].Split(" ", StringSplitOptions.RemoveEmptyEntries);
-                            if (tokens.Length != 2)
-                            {
-                                Debug.WriteLine($"Unknown format at line {lines[i]}");
-                                continue;
-                            }
-                            if (tokens[0] != "return")
-                            {
-                                Debug.WriteLine($"Unknown format at line {lines[i]}");
-                                continue;
-                            }
-
-                            parsedModel.FieldName = tokens[1].Substring(0, tokens[1].Length - 1).Trim(); // strip ";"
-
-                        }
-                        else
-                        {
-
-                            //
-                            //  look for alternate form
-                            tokens = line.Split("=>", StringSplitOptions.RemoveEmptyEntries);
-                            if (tokens.Length == 2)
-                            {
-
-                                parsedModel.FieldName = tokens[1].Substring(0, tokens[1].Length - 1).Trim(); // strip the ";"
-                            }
-                            else
-                            {
-                                Debug.WriteLine($"Unknown format at line {line}");
-                                continue;
-                            }
-                        }
-                    }
-
-                    if (line.IndexOf("NotifyPropertyChanged()") != -1)
-                    {
-                        parsedModel.ChangeNotification = true;
-
+                        __FIELDNAME__ = value;
+                        __NOTIFY__
                     }
                 }
-                PropertyList.Add(parsedModel);
-            }
+            }";
+         * 
+         * 
+         */
 
-            //
-            //  now we need to find the defaults
-            toParse = toParse.Replace(" ", ""); // no spaces!
-            foreach (var prop in PropertyList)
-            {
-                //
-                //  looking for __TYPE__ __FIELDNAME__ = __DEFAULT__;
-                //
-                if (prop.IsDependencyProperty) continue;
-                var index = toParse.IndexOf(prop.FieldName + "=");
-                if (index != -1)
-                {
-                    var eol = toParse.IndexOf("\r", index);
-                    var fnLength = prop.FieldName.Length;
-                    var defValue = toParse.Substring(index + fnLength + 1, eol - index - fnLength - 2);
-                    if (defValue != "value") // we pick up   __FIELDNAME__ = value;
-                    {
-                        prop.Default = defValue;
-                    }
 
-                }
-            }
-            if (PropertyList.Count > 0)
-            {
-                GenerateAllProperties();
-                SelectedProperty = PropertyList[0];
-            }
-        }
-
-        private string GetUserCode(string parseString, string propertyName)
-        {
-            string functionName = "Set" + propertyName;
-            int idx = parseString.IndexOf(functionName);
-            // find first { after function name
-            int firstCurly = parseString.IndexOf("{", idx + 1);
-            var charArray = parseString.ToCharArray(firstCurly + 1, parseString.Length - firstCurly - 1);
-            int braceCount = 1;
-            string userCode = "";
-            for (int i = 0; i < charArray.Length; i++)
-            {
-                userCode += charArray[i].ToString();
-                if (charArray[i] == '{')
-                    braceCount++;
-                if (charArray[i] == '}')
-                    braceCount--;
-
-                if (braceCount == 0) break;
-            }
-            //
-            //  we end with the trailing brace, which we don't want
-            return userCode.Substring(0, userCode.Length - 1).Trim();
-        }
 
         private string GetStringBetween(string toParse, string start, string end)
         {
@@ -515,10 +387,10 @@ namespace PropertyWizard
 
                 case "Default Field Names":
                     {
-                        
+
                         foreach (var prop in PropertyList)
                         {
-                            prop.FieldName = "_" + char.ToLower(prop.PropertyName[0]) + prop.PropertyName.Substring(1);;
+                            prop.FieldName = "_" + char.ToLower(prop.PropertyName[0]) + prop.PropertyName.Substring(1); ;
                         }
                     }
 
@@ -540,6 +412,40 @@ namespace PropertyWizard
             GenerateAllProperties();
         }
 
+        private void TextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            var tb = sender as TextBox;
+            if (tb != null)
+            {
+                tb.SelectAll();
+            }
+        }
 
+        private void OnParse(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _parsing = true;
+                var pfi = PropertyParser.ParseFile(ParseCode);
+                PropertyList.Clear();
+                foreach (var prop in pfi.PropertyList)
+                {
+                    PropertyList.Add(prop);
+                }
+
+                CodeNoProperties = pfi.NoProperties;
+                if (PropertyList.Count > 0)
+                {
+                    SelectedProperty = PropertyList[0];
+                }
+            }
+            finally
+            {
+                _parsing = false;
+                GenerateAllProperties();
+            }
+        }
     }
+
+
 }

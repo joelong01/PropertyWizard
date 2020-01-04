@@ -47,6 +47,7 @@ private void Set__PROPERTYNAME__(__TYPE__ value)
 {
     __USER_CODE__
 }";
-
+        // public int Foo { get; set; } = 54;
+        public static string OneLiner { get; } = @"public __TYPE__ __PROPERTYNAME__ { get;set; } = __DEFAULT__";
     }
 }
