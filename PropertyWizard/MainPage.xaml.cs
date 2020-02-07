@@ -1,11 +1,4 @@
-﻿/* this means we have something like this:
-                     
-                        public Foo()
-                        {
-                        }
-
-                    */
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -36,48 +29,8 @@ namespace PropertyWizard
 
     public sealed partial class MainPage : Page
     {
-        //  in a comment!
-        //private void SetTest(string value)
-        //{
-
-        //}
-        /*
-         * in a comment!!
-        private void SetTest(string value)
-        {
-
-        }
-        */
         private ObservableCollection<PropertyModel> PropertyList { get; } = new ObservableCollection<PropertyModel>();
-        public static readonly DependencyProperty TestProperty = DependencyProperty.Register("Test", typeof(string), typeof(MainPage), new PropertyMetadata(",", TestChanged));
-        public string Test
-        {
-            get => (string)GetValue(TestProperty);
-            set => SetValue(TestProperty, value);
-        }
-        private static void TestChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            var depPropClass = d as MainPage;
-            var depPropValue = (string)e.NewValue;
-            depPropClass?.SetTest(depPropValue);
-        }
-        //  in a comment!
-        //private void SetTest(string value)
-        //{
-
-        //}
-        /*
-         * in a comment!!
-        private void SetTest(string value)
-        {
-
-        }
-        */
-        private void SetTest(string value)
-        {
-            Debug.Print($"Test changed to: {value}");
-        }
-
+        private string _defaultClassType = "";
         private bool _parsing = false;
 
         public static readonly DependencyProperty PropertiesAsTextProperty = DependencyProperty.Register("PropertiesAsText", typeof(string), typeof(MainPage), new PropertyMetadata(""));
@@ -87,6 +40,18 @@ namespace PropertyWizard
         public static readonly DependencyProperty AllCodeProperty = DependencyProperty.Register("AllCode", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty CodeNoPropertiesProperty = DependencyProperty.Register("CodeNoProperties", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty ParseCodeProperty = DependencyProperty.Register("ParseCode", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public static readonly DependencyProperty AllFieldsTogetherProperty = DependencyProperty.Register("AllFieldsTogether", typeof(bool), typeof(MainPage), new PropertyMetadata(true));
+        public static readonly DependencyProperty DefaultToRegularPropertyProperty = DependencyProperty.Register("DefaultToRegularProperty", typeof(bool), typeof(MainPage), new PropertyMetadata(true));
+        public bool DefaultToRegularProperty
+        {
+            get => (bool)GetValue(DefaultToRegularPropertyProperty);
+            set => SetValue(DefaultToRegularPropertyProperty, value);
+        }
+        public bool AllFieldsTogether
+        {
+            get => (bool)GetValue(AllFieldsTogetherProperty);
+            set => SetValue(AllFieldsTogetherProperty, value);
+        }
         public string ParseCode
         {
             get => (string)GetValue(ParseCodeProperty);
@@ -117,7 +82,7 @@ namespace PropertyWizard
         private void SetSelectedProperty(PropertyModel model)
         {
             if (model == null) return;
-            PropertiesAsText = GenerateProperty(model);
+            PropertiesAsText = BuildTemplateAndReplaceStrings(model);
             // do not call GenerateAllProperties() as all we did is change the list selection and it will already have the full prop list
         }
 
@@ -195,76 +160,113 @@ namespace PropertyWizard
         {
             PropertyModel model = e.ClickedItem as PropertyModel;
             Debug.WriteLine("ListView_ItemClicked");
-            PropertiesAsText = GenerateProperty(model);
+            PropertiesAsText = BuildTemplateAndReplaceStrings(model);
         }
 
+        private StringBuilder GetDeclareTemplate(PropertyModel prop)
+        {
+            StringBuilder sb = new StringBuilder();
+            if (prop.IsDependencyProperty)
+            {
+                if (prop.ChangeNotification)
+                {
+                    sb = sb.Append(Templates.DependencyDeclareWidthNotification);
+                }
+                else
+                {
+                    sb.Append(Templates.DependencyDeclareNoNotify);
+                }
 
+            }
+            else
+            {
+
+                sb.Append(Templates.FieldDeclare);
+            }
+
+            return sb;
+
+        }
 
         private void GenerateAllProperties()
         {
-            if (_parsing) return; 
+            _cmbChoice.IsDropDownOpen = false;
+
+            if (_parsing) return;
             StringBuilder sb = new StringBuilder();
-            foreach (var prop in PropertyList)
+            StringBuilder sbTemp;
+            if (AllFieldsTogether)
             {
-                sb.Append(GenerateProperty(prop));
+                foreach (var property in PropertyList)
+                {
+                    sbTemp = new StringBuilder();
+                    sbTemp.Append(GetDeclareTemplate(property));
+                    sbTemp.Append("\r");
+                    sb = sb.Append(ReplaceMagicStrings(sbTemp, property));
+
+                }
+
+                sb.Append("\r");
+            }
+
+            foreach (var property in PropertyList)
+            {
+                sbTemp = new StringBuilder();
+                if (!AllFieldsTogether)
+                {
+                    sbTemp = sbTemp.Append(GetDeclareTemplate(property));
+
+                }
+                BuildBodyTemplate(ref sbTemp, property);
+                sb = sb.Append(ReplaceMagicStrings(sbTemp, property));
             }
 
             AllPropertiesAsText = sb.ToString();
         }
-
-        private string GenerateProperty(PropertyModel model)
+        private string ReplaceMagicStrings(StringBuilder sbin, PropertyModel model)
         {
-            var json = JsonConvert.SerializeObject(model, Formatting.Indented);
-            // Debug.WriteLine(json);
+            StringBuilder sb = new StringBuilder(sbin.ToString());
+            sb = sb.Replace("__TYPE__", model.PropertyType);
+            sb = sb.Replace("__DEFAULT__", model.Default);
+            sb = sb.Replace("__PROPERTYNAME__", model.PropertyName);
+            sb = sb.Replace("__FIELDNAME__", model.FieldName);
+            sb = sb.Replace("__DEPENDENCY_PROP_NOTIFY__", model.ChangeNotificationFunction);
+            sb = sb.Replace("__CLASS__", model.ClassType);
+            sb = sb.Replace("__USER_CODE__", model.UserSetCode);
+            return sb.ToString();
 
+        }
 
-            StringBuilder sb;
+        private void BuildBodyTemplate(ref StringBuilder sb, PropertyModel model)
+        {
             if (model.IsDependencyProperty)
             {
-                sb = new StringBuilder(Templates.DependencProperty);
-                sb.Replace("__CLASS__", model.ClassType);
-
-            }
-            else
-            {
-                sb = new StringBuilder(Templates.RegularProperty);
-            }
-
-            sb.Replace("__TYPE__", model.PropertyType);
-            sb.Replace("__DEFAULT__", model.Default);
-            sb.Replace("__PROPERTYNAME__", model.PropertyName);
-            sb.Replace("__FIELDNAME__", model.FieldName);
-            if (model.ChangeNotification)
-            {
-                if (model.IsDependencyProperty)
+                if (model.ChangeNotification)
                 {
-                    string changeNotificationFunction = ", " + model.PropertyName + "Changed";
-                    sb.Replace("__DEPENDENCY_PROP_NOTIFY__", changeNotificationFunction);
-                    string depNotify = Templates.DependencyNotify.Replace("__PROPERTYNAME__", model.PropertyName);
-                    depNotify = depNotify.Replace("__TYPE__", model.PropertyType);
-                    depNotify = depNotify.Replace("__CLASS__", model.ClassType);
-                    depNotify = depNotify.Replace("__USER_CODE__", model.UserSetCode);
-
-                    sb.Append(depNotify);
+                    sb = sb.Append(Templates.DependencyBodyNotify);
                 }
                 else
                 {
-                    sb.Replace("__NOTIFY__", Templates.Notify);
+                    sb = sb.Append(Templates.DependencyBodyNoNotify);
                 }
+            }
+            else if (model.ChangeNotification)
+            {
+                sb = sb.Append(Templates.RegularPropertyWithNotify);
             }
             else
             {
-                if (model.IsDependencyProperty)
-                {
-                    sb.Replace("__DEPENDENCY_PROP_NOTIFY__", "");
-                }
-                else
-                {
-                    sb.Replace("__NOTIFY__", "");
-                }
+                sb = sb.Append(Templates.RegularPropertyNoNotify);
             }
 
-            return sb.ToString();
+        }
+
+        private string BuildTemplateAndReplaceStrings(PropertyModel model)
+        {
+
+            StringBuilder sb = GetDeclareTemplate(model);
+            BuildBodyTemplate(ref sb, model);
+            return ReplaceMagicStrings(sb, model);
 
         }
 
@@ -274,7 +276,12 @@ namespace PropertyWizard
 
         private void Button_AddNew(object sender, RoutedEventArgs e)
         {
-            var model = new PropertyModel();
+            var model = new PropertyModel()
+            {
+                ClassType = _defaultClassType,
+                IsDependencyProperty = !DefaultToRegularProperty,
+
+            };
             PropertyList.Add(model);
             SelectedProperty = model;
         }
@@ -299,37 +306,10 @@ namespace PropertyWizard
                     model.ClassType = PropertyList[0].ClassType;
                 }
             }
-            PropertiesAsText = GenerateProperty(model);
+            PropertiesAsText = BuildTemplateAndReplaceStrings(model);
 
             GenerateAllProperties();
         }
-
-
-
-
-
-        /*
-         * Looks like:
-         * 
-         * public __TYPE__ __PROPERTYNAME__
-            {
-                get
-                {
-                    return __FIELDNAME__;
-                }
-                set
-                {
-                    if (value != __FIELDNAME__)
-                    {
-                        __FIELDNAME__ = value;
-                        __NOTIFY__
-                    }
-                }
-            }";
-         * 
-         * 
-         */
-
 
 
         private string GetStringBetween(string toParse, string start, string end)
@@ -362,55 +342,7 @@ namespace PropertyWizard
                 return "";
         }
 
-        private async void Choice_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (e.AddedItems.Count == 0) return;
-            string choice = ((ComboBoxItem)_cmbChoice.SelectedItem).Content as string;
-            switch (choice)
-            {
-                case "Dependency Property":
-                    {
-                        foreach (var prop in PropertyList)
-                        {
-                            prop.IsDependencyProperty = true;
-                        }
-                    }
-                    break;
-                case "Regular Property":
-                    {
-                        foreach (var prop in PropertyList)
-                        {
-                            prop.IsDependencyProperty = false;
-                        }
-                    }
-                    break;
 
-                case "Default Field Names":
-                    {
-
-                        foreach (var prop in PropertyList)
-                        {
-                            prop.FieldName = "_" + char.ToLower(prop.PropertyName[0]) + prop.PropertyName.Substring(1); ;
-                        }
-                    }
-
-                    break;
-                case "Set Default Class Type":
-
-                    {
-                        var classType = await GetUserString("Property Wizard", "Enter the default class type here");
-                        foreach (var prop in PropertyList)
-                        {
-                            prop.ClassType = classType;
-                        }
-                    }
-                    break;
-
-                default: break;
-
-            }
-            GenerateAllProperties();
-        }
 
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
         {
@@ -444,6 +376,59 @@ namespace PropertyWizard
                 _parsing = false;
                 GenerateAllProperties();
             }
+        }
+
+        private void OnMakeAllDependencyProperty(object sender, RoutedEventArgs e)
+        {
+            foreach (var prop in PropertyList)
+            {
+                prop.IsDependencyProperty = true;
+            }
+           
+            GenerateAllProperties();
+        }
+
+        private void OnDefaultFieldNames(object sender, RoutedEventArgs e)
+        {
+            foreach (var prop in PropertyList)
+            {
+                if (prop.PropertyName.Length < 2) continue;
+                prop.FieldName = "_" + char.ToLower(prop.PropertyName[0]) + prop.PropertyName.Substring(1); ;
+            }
+            GenerateAllProperties();
+        }
+
+        private void OnMakeAllRegularProperty(object sender, RoutedEventArgs e)
+        {
+            foreach (var prop in PropertyList)
+            {
+                prop.IsDependencyProperty = false;
+            }
+           
+            GenerateAllProperties();
+        }
+
+        private async void OnSetDefaultClass(object sender, RoutedEventArgs e)
+        {
+            _defaultClassType = await GetUserString("Property Wizard", "Enter the default class type here");
+            foreach (var prop in PropertyList)
+            {
+                prop.ClassType = _defaultClassType;
+            }
+            GenerateAllProperties();
+        }
+
+        private void OnComboxBoxCancel(object sender, RoutedEventArgs e)
+        {
+            _cmbChoice.IsDropDownOpen = false;
+
+        }
+
+        private void OnMakeAll(object sender, RoutedEventArgs e)
+        {
+            _cmbChoice.IsDropDownOpen = !_cmbChoice.IsDropDownOpen;
+
+
         }
     }
 

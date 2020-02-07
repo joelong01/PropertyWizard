@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -20,6 +21,15 @@ namespace PropertyWizard
 {
     public sealed partial class PropertyViewCtrl : UserControl
     {
+        private static ObservableCollection<string> _propertyTypes = new ObservableCollection<string>()
+        {
+             "int","string","bool","byte","sbyte","char","decimal","double","float","int","uint","long","ulong","object","short","ushort","string"
+
+        };
+
+
+        private  ObservableCollection<string> PropertyTypes { get => _propertyTypes; } 
+
         public static readonly DependencyProperty ModelProperty = DependencyProperty.Register("Model", typeof(PropertyModel), typeof(PropertyViewCtrl), new PropertyMetadata(null));
         public PropertyModel Model
         {
@@ -29,6 +39,7 @@ namespace PropertyWizard
         public PropertyViewCtrl()
         {
             this.InitializeComponent();
+           
         }
 
         public PropertyViewCtrl(PropertyModel model)
@@ -56,6 +67,20 @@ namespace PropertyWizard
                 parent = VisualTreeHelper.GetParent(parent) as UIElement;
             }
             return null;
+        }
+
+        private void ComboBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            // base.OnGotFocus(e);
+            ComboBox cb = sender as ComboBox;
+            if (cb == null) return;
+            string t = cb.Text.Trim();
+            if (t == "") return;
+            if (_propertyTypes.Contains(t) == false)
+            {
+                _propertyTypes.Insert(0, t);
+            }
+
         }
     }
 }

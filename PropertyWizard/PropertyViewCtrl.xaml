@@ -24,7 +24,7 @@
             <Setter Property="IsSpellCheckEnabled" Value="False"/>
         </Style>
         <Style TargetType="TextBox" x:Key="MLTextBoxStyle">
-            <Setter Property="Margin" Value="0" />
+            <Setter Property="Margin" Value="10,0,0,10" />
             <Setter Property="FontFamily" Value="Consolas" />
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="AcceptsReturn" Value="True"/>
@@ -33,11 +33,12 @@
 
         </Style>
         <Style TargetType="CheckBox" x:Key="CheckBoxStyle">
-            <Setter Property="Margin" Value="0,0,0,0" />
+            <Setter Property="Margin" Value="5,0,0,0" />
             <Setter Property="FontFamily" Value="Segoe UI" />
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="FlowDirection" Value="RightToLeft"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
             <Setter Property="Padding" Value="4, -2, 0, 0" />
         </Style>
     </Control.Resources>
@@ -45,11 +46,11 @@
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="120" />
-            <ColumnDefinition Width="10*" />
+            <ColumnDefinition Width="100*" />
             <ColumnDefinition Width="90" />
-            <ColumnDefinition Width="10*" />
-            <ColumnDefinition Width="110" />
-            <ColumnDefinition Width="10*" />
+            <ColumnDefinition Width="100*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="5" />
 
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -75,11 +76,13 @@
                                GotFocus="TextBox_GotFocus" 
                                />
 
-        <TextBlock Grid.Row="1" Grid.Column="4" Text="Property Type" Style="{StaticResource TextBlockStyle}" />
-        <TextBox   Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="2"
-                               Text="{x:Bind Model.PropertyType , Mode=TwoWay}"
-                               Style="{StaticResource TextBoxStyle}"  
-                               GotFocus="TextBox_GotFocus" />
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="Property Type" Style="{StaticResource TextBlockStyle}" />
+        <ComboBox   Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="1" HorizontalAlignment="Stretch"                    
+                    IsTextSearchEnabled="False"                     
+                    IsEditable="True"
+                    Text="{x:Bind Model.PropertyType , Mode=TwoWay}" 
+                    ItemsSource="{x:Bind  PropertyTypes}"
+                    GotFocus="ComboBox_GotFocus"  />
 
         <TextBlock Grid.Row="3" Grid.Column="0" Text="Class Type" Style="{StaticResource TextBlockStyle}"/>
         <TextBox   Grid.Row="3" Grid.Column="1" 
@@ -93,17 +96,17 @@
                                Text="{x:Bind Model.Default , Mode=TwoWay}" 
                                Style="{StaticResource TextBoxStyle}" 
                                GotFocus="TextBox_GotFocus" />
-        
-        <CheckBox Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" Content="Change Notification" Tag="ChangeNotification"
+
+        <CheckBox Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="1"  Content="Change Notification" Tag="ChangeNotification"
                               IsChecked="{x:Bind Model.ChangeNotification, Mode=TwoWay}"
                               Style="{StaticResource CheckBoxStyle}"/>
 
 
-        <CheckBox Grid.Row="5" Grid.Column="2" Grid.ColumnSpan="3" Content="Dependency Property" 
+        <CheckBox Grid.Row="3" Grid.Column="4" Grid.ColumnSpan="1" Content="Dependency Property" 
                               IsChecked="{x:Bind Model.IsDependencyProperty, Mode=TwoWay,  Converter={StaticResource NullableBoolToBoolConverter}}" 
                               Style="{StaticResource CheckBoxStyle}"/>
 
-        <CheckBox Grid.Row="5" Grid.Column="4" Grid.ColumnSpan="3" Content="Setter" 
+        <CheckBox Grid.Row="5" Grid.Column="4" Grid.ColumnSpan="1" Content="Setter" 
                               IsChecked="{x:Bind Model.HasSetter, Mode=TwoWay,  Converter={StaticResource NullableBoolToBoolConverter}}" 
                               Style="{StaticResource CheckBoxStyle}"/>
 

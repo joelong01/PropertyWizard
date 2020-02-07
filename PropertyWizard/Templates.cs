@@ -8,8 +8,8 @@ namespace PropertyWizard
 {
     static class Templates
     {
-        public static string RegularProperty { get; } = @"
-private __TYPE__ __FIELDNAME__ = __DEFAULT__;	
+        public static string FieldDeclare { get; } = @"private __TYPE__ __FIELDNAME__ = __DEFAULT__;";
+        public static string RegularPropertyWithNotify { get; } = @"
 public __TYPE__ __PROPERTYNAME__
 {
     get
@@ -21,22 +21,42 @@ public __TYPE__ __PROPERTYNAME__
         if (value != __FIELDNAME__)
         {
             __FIELDNAME__ = value;
-            __NOTIFY__
+            NotifyPropertyChanged();
         }
     }
 }";
-        public static string Notify { get; } = "NotifyPropertyChanged();";
+        public static string RegularPropertyNoNotify { get; } = @"
+public __TYPE__ __PROPERTYNAME__
+{
+    get
+    {
+        return __FIELDNAME__;
+    }
+    set
+    {
+        if (value != __FIELDNAME__)
+        {
+            __FIELDNAME__ = value;          
+        }
+    }
+}
+";
+
+        public static string DependencyDeclareWidthNotification { get; } = @"
+public static readonly DependencyProperty __PROPERTYNAME__Property = DependencyProperty.Register(""__PROPERTYNAME__"", typeof(__TYPE__), typeof(__CLASS__), new PropertyMetadata(__DEFAULT__, __DEPENDENCY_PROP_NOTIFY__));";
+        public static string DependencyDeclareNoNotify { get; } = @"
+public static readonly DependencyProperty __PROPERTYNAME__Property = DependencyProperty.Register(""__PROPERTYNAME__"", typeof(__TYPE__), typeof(__CLASS__), new PropertyMetadata(__DEFAULT__));";
+
+        public static string DependencyBodyNoNotify { get; } = @"
  
-        public static string DependencProperty { get; } = @"
- public static readonly DependencyProperty __PROPERTYNAME__Property = DependencyProperty.Register(""__PROPERTYNAME__"", typeof(__TYPE__), typeof(__CLASS__), new PropertyMetadata(__DEFAULT____DEPENDENCY_PROP_NOTIFY__));
  public string __PROPERTYNAME__
  {
      get => (__TYPE__)GetValue(__PROPERTYNAME__Property);
      set => SetValue(__PROPERTYNAME__Property, value);
  }
 ";
-        public static string DependencyNotify { get; } = @"
-private static void  __PROPERTYNAME__Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        public static string DependencyBodyNotify { get; } = @"
+private static void __PROPERTYNAME__Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
 {
     var depPropClass = d as __CLASS__;
     var depPropValue = (__TYPE__)e.NewValue;
@@ -46,7 +66,8 @@ private static void  __PROPERTYNAME__Changed(DependencyObject d, DependencyPrope
 private void Set__PROPERTYNAME__(__TYPE__ value)
 {
     __USER_CODE__
-}";
+}
+";
         // public int Foo { get; set; } = 54;
         public static string OneLiner { get; } = @"public __TYPE__ __PROPERTYNAME__ { get;set; } = __DEFAULT__";
     }

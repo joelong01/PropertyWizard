@@ -11,39 +11,45 @@
     <Control.Resources>
         <SolidColorBrush x:Key="TextControlBorderBrushPointerOver"
                  Color="{ThemeResource SystemAccentColor}"/>
-        
+
         <Style TargetType="TextBlock" x:Key="TextBlockStyle">
-                <Setter Property="Margin" Value="5" />
-                <Setter Property="FontFamily" Value="Segoe UI" />
-                <Setter Property="FontSize" Value="16"/>
-                <Setter Property="HorizontalAlignment" Value="Right" />
-                <Setter Property="FlowDirection" Value="LeftToRight"/>
-            </Style>
-            <Style TargetType="TextBox" x:Key="TextBoxStyle">
-                <Setter Property="Margin" Value="0" />
-                <Setter Property="FontFamily" Value="Segoe UI" />
-                <Setter Property="FontSize" Value="16"/>
-                <Setter Property="IsSpellCheckEnabled" Value="False"/>
-            </Style>
-            <Style TargetType="TextBox" x:Key="MLTextBoxStyle">
-                <Setter Property="Margin" Value="0" />
-                <Setter Property="FontFamily" Value="Consolas" />
-                <Setter Property="FontSize" Value="12"/>
-                <Setter Property="AcceptsReturn" Value="True"/>
-                <Setter Property="IsSpellCheckEnabled" Value="False"/>
-                <Setter Property="Background" Value="DimGray"/>
-                <Setter Property="BorderBrush" Value="{StaticResource SystemControlHighlightAccentBrush}"/>
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="FlowDirection" Value="LeftToRight"/>
+        </Style>
+        <Style TargetType="TextBox" x:Key="TextBoxStyle">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="IsSpellCheckEnabled" Value="False"/>
+        </Style>
+        <Style TargetType="TextBox" x:Key="MLTextBoxStyle">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="IsSpellCheckEnabled" Value="False"/>
+            <Setter Property="Background" Value="DimGray"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SystemControlHighlightAccentBrush}"/>
             <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible" />
 
         </Style>
-            <Style TargetType="CheckBox" x:Key="CheckBoxStyle">
-                <Setter Property="Margin" Value="0,0,0,0" />
-                <Setter Property="FontFamily" Value="Segoe UI" />
-                <Setter Property="FontSize" Value="16"/>
-                <Setter Property="FlowDirection" Value="RightToLeft"/>
-                <Setter Property="VerticalContentAlignment" Value="Center"/>
-                <Setter Property="Padding" Value="4, -2, 0, 0" />
-            </Style>
+        <Style TargetType="CheckBox" x:Key="CheckBoxStyle">
+            <Setter Property="Margin" Value="0,0,0,0" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FlowDirection" Value="RightToLeft"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="4, -2, 0, 0" />
+        </Style>
+        <Style TargetType="TextBlock" x:Key="ButtonTextStyle">
+            <Setter Property="Margin" Value="0,5,0,0" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
 
 
         <DataTemplate  x:Key="PlayerResourceCountItem" x:DataType="local:PropertyModel" >
@@ -64,7 +70,7 @@
                 <Button.Content>
                     <StackPanel>
                         <TextBlock Text="&#xE11C;" FontFamily="Segoe MDL2 Assets" FontSize="50"/>
-                        <TextBlock Text="Open" FontSize="14" FontFamily="Segoe UI" HorizontalTextAlignment="Center" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                        <TextBlock Text="Open" Style="{StaticResource ResourceKey=ButtonTextStyle}"  />
                     </StackPanel>
                 </Button.Content>
             </Button>
@@ -75,7 +81,7 @@
                 <Button.Content>
                     <StackPanel>
                         <TextBlock Text="&#xE117;" FontFamily="Segoe MDL2 Assets" FontSize="50"/>
-                        <TextBlock Text="Parse" FontSize="14" FontFamily="Segoe UI" HorizontalTextAlignment="Center" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                        <TextBlock Text="Parse" Style="{StaticResource ResourceKey=ButtonTextStyle}" />
                     </StackPanel>
                 </Button.Content>
             </Button>
@@ -85,7 +91,7 @@
                 <Button.Content>
                     <StackPanel>
                         <TextBlock Text="&#xE105;" FontFamily="Segoe MDL2 Assets" FontSize="50"/>
-                        <TextBlock Text="Save" FontSize="14" FontFamily="Segoe UI" HorizontalTextAlignment="Center" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                        <TextBlock Text="Save" Style="{StaticResource ResourceKey=ButtonTextStyle}" />
                     </StackPanel>
                 </Button.Content>
             </Button>
@@ -93,7 +99,7 @@
                 <Button.Content>
                     <StackPanel>
                         <TextBlock Text="&#xE109;" FontFamily="Segoe MDL2 Assets" FontSize="50"/>
-                        <TextBlock Text="Add New" FontSize="14" FontFamily="Segoe UI" HorizontalTextAlignment="Center" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                        <TextBlock Text="Add New" Style="{StaticResource ResourceKey=ButtonTextStyle}" />
                     </StackPanel>
                 </Button.Content>
             </Button>
@@ -101,7 +107,7 @@
                 <Button.Content>
                     <StackPanel>
                         <TextBlock Text="&#xE107;" FontFamily="Segoe MDL2 Assets" FontSize="50"/>
-                        <TextBlock Text="Delete" FontSize="14" FontFamily="Segoe UI" HorizontalTextAlignment="Center" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                        <TextBlock Text="Delete" Style="{StaticResource ResourceKey=ButtonTextStyle}" />
                     </StackPanel>
                 </Button.Content>
             </Button>
@@ -109,18 +115,43 @@
                 <Button.Content>
                     <StackPanel>
                             <TextBlock Text="&#xE122;" FontFamily="Segoe MDL2 Assets" FontSize="50"/>
-                            <TextBlock Text="Make All" FontSize="14" FontFamily="Segoe UI" HorizontalTextAlignment="Center" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                            <TextBlock Text="Make All" Style="{StaticResource ResourceKey=ButtonTextStyle}" />
                         </StackPanel>
                                         
                 </Button.Content>
             </Button>-->
-            <ComboBox Name="_cmbChoice" Width="200" Margin="10,0,0,0" Description="Make All..." VerticalAlignment="Center" FontFamily="Segoe UI" FontSize="14" SelectionChanged="Choice_SelectionChanged"  >
-                <ComboBoxItem Content="Dependency Property"/>
-                <ComboBoxItem Content="Regular Property"/>
-                <ComboBoxItem Content="Default Field Names"/>
-                <ComboBoxItem Content="Set Default Class Type"/>
-                <ComboBoxItem Content="Cancel and Do Nothing"/>
-            </ComboBox>
+            <Button Margin="0,9,0,4" Click="OnMakeAll">
+                <Button.Content>
+
+                    <StackPanel>
+                        <ComboBox Name="_cmbChoice" Width="200" Margin="10" VerticalAlignment="Center" FontFamily="Segoe UI" FontSize="14"   HorizontalAlignment="Stretch" >
+                            <ComboBoxItem >
+                                <Button Content="Dependency Properites" Click="OnMakeAllDependencyProperty" HorizontalAlignment="Stretch"   />
+                            </ComboBoxItem>
+                            <ComboBoxItem >
+                                <Button Content="Regular Property" Click="OnMakeAllRegularProperty" HorizontalAlignment="Stretch" />
+                            </ComboBoxItem>
+                            <ComboBoxItem>
+                                <Button Content="Default FieldName" Click="OnDefaultFieldNames" HorizontalAlignment="Stretch" />
+                            </ComboBoxItem>
+                            <ComboBoxItem>
+                                <Button Content="Set Default Class Type" Click="OnSetDefaultClass" HorizontalAlignment="Stretch" />
+                            </ComboBoxItem>
+                            <ComboBoxItem>
+                                <Button Content="Cancel" Click="OnComboxBoxCancel" HorizontalAlignment="Stretch" />
+                            </ComboBoxItem>
+                        </ComboBox>
+                        <TextBlock Text="Make All..."  Style="{StaticResource ResourceKey=ButtonTextStyle}"/>
+                    </StackPanel>
+                </Button.Content>
+            </Button>
+            <StackPanel Margin="0,10,0,0" Background="{StaticResource ButtonBackgroundThemeBrush}" >
+                <ToggleSwitch OnContent="All Fields Together " OffContent="Fields With Property" Margin="5,0,0,0" 
+                          IsOn="{x:Bind AllFieldsTogether, Mode=TwoWay}"/>
+
+                <ToggleSwitch OnContent="Default Regular" OffContent="Default Dependency" Margin="5,0,0,0" 
+                          IsOn="{x:Bind DefaultToRegularProperty, Mode=TwoWay}"/>
+            </StackPanel>
 
         </StackPanel>
         <ListView Name="_listView" Grid.Row="1"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowDrop="True" CanDragItems="True" CanReorderItems="True"
@@ -143,8 +174,34 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <controls:GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" />
-                    <TextBox Name="_txtProperties" Text="{x:Bind PropertiesAsText, Mode=TwoWay}" Grid.Row="3" Style="{StaticResource MLTextBoxStyle}" GotFocus="TextBox_GotFocus"/>
-                    <TextBox Name="_txtAllProperties" Grid.Column="2" Text="{x:Bind AllPropertiesAsText, Mode=TwoWay}" Grid.Row="3" Style="{StaticResource MLTextBoxStyle}" GotFocus="TextBox_GotFocus" />
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="50"/>
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Orientation="Horizontal">
+                            
+                            <Button  Width="50" Click="OnParse" Height="50">
+                                <Button.Content>
+                                    <StackPanel Margin="0,0,0,-2">
+                                        <TextBlock Text="&#xE117;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Parse" Style="{StaticResource ResourceKey=ButtonTextStyle}" FontSize="12"  Margin="0, -2, 0 ,0"/>
+                                    </StackPanel>
+                                </Button.Content>
+                            </Button>
+                            <Button  Click="OnParse" Height="50" Width="100">
+                                <Button.Content>
+                                    <StackPanel Margin="0,0,0,-2">
+                                        <TextBlock Text="&#xE117;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="+" FontSize="20" HorizontalAlignment="Center" Margin="0,-25,0,0"/>
+                                        <TextBlock Text="Parse and Add" Style="{StaticResource ResourceKey=ButtonTextStyle}" FontSize="12" Margin="0, -2, 0 ,0" />
+                                    </StackPanel>
+                                </Button.Content>
+                            </Button>
+                        </StackPanel>
+                        <TextBox Name="_txtProperties" Text="{x:Bind PropertiesAsText, Mode=TwoWay}" Grid.Row="1" Style="{StaticResource MLTextBoxStyle}" GotFocus="TextBox_GotFocus"/>
+                    </Grid>
+                    <TextBox Name="_txtAllProperties" Grid.Column="2" Text="{x:Bind AllPropertiesAsText, Mode=TwoWay}" Grid.Row="3" Style="{StaticResource MLTextBoxStyle}" GotFocus="TextBox_GotFocus" FocusVisualPrimaryBrush="{StaticResource TextControlBorderBrushPointerOver}" />
                 </Grid>
             </controls:TabViewItem>
             <controls:TabViewItem Header="With Properties">
@@ -159,7 +216,7 @@
 
 
         </controls:TabView>
-       
+
 
     </Grid>
 </Page>

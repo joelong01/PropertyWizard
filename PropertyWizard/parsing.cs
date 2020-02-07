@@ -32,8 +32,8 @@ namespace PropertyWizard
         public string AccessModifier { get; set; } = "";
         public string Name { get; set; } = "";
         public string Code { get; internal set; }
-        public int OldLocation { get; internal set; }
-        public int NewLocation { get; internal set; }
+        public int StartIndex { get; internal set; }
+        public int EndIndex { get; internal set; }
     }
 
     public class ParsedFileInfo
@@ -49,97 +49,104 @@ namespace PropertyWizard
         ///
         /// Assumptions:
         ///    1. property declaration is on one line
-        ///    2. all properties have a get, but they don't need a set (but we always generate a set)
+        ///    2. all properties have a get, but they don't need a set
         ///    3. the code compiles!
-        ///    4. this code does not handle comments -- any commented out property will also be parsed/added
-        ///    5. User code in dependency property change notification functions is preserved
-        ///    6. No user code in get functions!
-        ///    7. properties are either public or private
+        ///    4. comments above a function/property belong to the function/property
+        ///    5. User code is preserved
+        ///    6. properties are either public or private
+        ///    7. there are no strings that have a "(" in them.
+        ///    8. Dependency Property functions look like Templates.DependencProperty
         ///    
         ///    
-        /// NOTE:  if you paste this file into the AllPropertiesAsText TextBox, it will correctly parse out the properties...
+        /// NOTE:  if you paste  mainpage.xaml.cs into the AllPropertiesAsText TextBox, it will correctly parse out the properties...
         /// 
 
         public static ParsedFileInfo ParseFile(string toParse)
         {
 
             ParsedFileInfo parsedInfo = new ParsedFileInfo();
-            StringBuilder nonPropertyCode = new StringBuilder();
+            List<string> nonPropertyCode = new List<string>();
 
             //
             //  firt get all the lines
-            // var lines = AllPropertiesAsText.Split("\r", StringSplitOptions.RemoveEmptyEntries);
-            //for (int i = 0; i < lines.Length; i++)
-            int currentLocation = 0;
-            int oldLoc;
+            var lines = toParse.Split("\r");
+            for (int i = 0; i < lines.Length; i++)
+            {
+                lines[i] = lines[i].Trim();
+            }
+
             string nl = "\r";
             PropertyModel model;
             HashSet<string> dependencyPropertySetFunctions = new HashSet<string>();
             FunctionInfo functionInfo;
             bool foundFirstClass = false;
-            while (true)
+            string currentComment = "";
+            for (int currentLineIndex = 0; currentLineIndex < lines.Length; currentLineIndex++)
             {
-
-                (oldLoc, currentLocation) = GetLine(toParse, currentLocation, out string line);
-                Debug.WriteLine($"{currentLocation}: {line}");
-                if (line.Contains("_parsing"))
-                {
-                    Debug.WriteLine("here)");
-                }
-                if (currentLocation == -1)
-                    break;
+                string line = lines[currentLineIndex];
+                Debug.WriteLine(line);
                 if (line == "")
                 {
-                    nonPropertyCode.Append(nl);
+                    nonPropertyCode.Add(nl);
                     continue;
                 }
-                if (currentLocation >= toParse.Length) break;
-                string trimmedLine = line.Trim();
-                if (trimmedLine.StartsWith("public") == false && trimmedLine.StartsWith("private") == false)
+                if (line.Contains("delegate"))
                 {
-                    nonPropertyCode.Append(line + nl);
                     continue;
                 }
-                int commentStartPos = InsideComment(toParse, currentLocation);
-                if (commentStartPos != -1)
+                if (line.Contains("=>"))
                 {
-                    /* this means we have something like this:
+                    Debug.WriteLine($"line");
+                }
 
-                        public Foo()
-                        {
-                        }
 
-                    */
-
-                    int endCommentPos = toParse.IndexOf("*/", currentLocation);
-                    string restOfComment = toParse.Substring(currentLocation, endCommentPos - currentLocation + 2);
-                    nonPropertyCode.Append(line + nl);
-                    nonPropertyCode.Append(restOfComment);
-                    currentLocation = endCommentPos + 2;
+                if (line.StartsWith("//"))
+                {
+                    if (currentComment != "") nonPropertyCode.Add(currentComment);
+                    nonPropertyCode.Add(line);
+                    currentComment = "";
                     continue;
                 }
 
-                /**
-                 * 
-                 *  this is a long comment!
-                 * 
-                 * 
-                 */
+                if (line.StartsWith("/*"))
+                {
+                    StringBuilder sb = new StringBuilder();
+                    while (true)
+                    {
+                        sb.Append(lines[currentLineIndex] + nl);
+                        if (lines[currentLineIndex].EndsWith("*/")) break;
+                        currentLineIndex++;
+                    } // if we go over the index, the code would not compile, violating one constraint
+
+                    currentComment = sb.ToString();
+                    continue;
+                }
+
+                if (line.StartsWith("public") == false && line.StartsWith("private") == false)
+                {
+                    if (currentComment != "") nonPropertyCode.Add(currentComment);
+                    nonPropertyCode.Add(line);
+                    currentComment = "";
+                    continue;
+                }
+
 
                 if (line.Contains("get;") && line.Contains("{") && line.Contains("}"))
                 {
                     // then it starts with public or private and has a get in it -- assume one liner of the form
                     // public __TYPE__ __PROPERTYNAME__ { get;set; } = __DEFAULT__ where set is optional.
-                    Debug.WriteLine($"{line}");
                     model = ParseOneLiner(line);
                     if (model != null)
                     {
+                        model.Comment = currentComment;
                         parsedInfo.PropertyList.Add(model);
                     }
                     else
                     {
-                        nonPropertyCode.Append(line + nl);
+                        if (currentComment != "") nonPropertyCode.Add(currentComment);
+                        nonPropertyCode.Add(line);
                     }
+                    currentComment = "";
                     continue;
                 }
 
@@ -150,19 +157,23 @@ namespace PropertyWizard
                     if (line.Contains("DependencyProperty.Register"))
                     {
                         // dependency property declaration                        
-                        model = ParseDependencyProperty(toParse, line);
+                        model = ParseDependencyProperty(toParse, lines, currentLineIndex);
                         if (model != null)
                         {
+                            model.Comment = currentComment;
                             parsedInfo.PropertyList.Add(model);
+                            dependencyPropertySetFunctions.Add($"{model.PropertyName}"); // assumption!!
                             dependencyPropertySetFunctions.Add($"Set{model.PropertyName}"); // assumption!!
                             dependencyPropertySetFunctions.Add($"{model.PropertyName}Changed"); // assumption!!
+
                         }
                         else
                         {
                             Debug.Assert(false, $"how did we get here? {line}");
-                            nonPropertyCode.Append(line + nl);
+                            if (currentComment != "") nonPropertyCode.Add(currentComment);
+                            nonPropertyCode.Add(line);
                         }
-
+                        currentComment = "";
                         continue;
 
                     }
@@ -170,16 +181,18 @@ namespace PropertyWizard
                     {
                         //
                         //  user code of some kind
-                        functionInfo = GetFunction(toParse, oldLoc); // pass in oldLoc because you want the function name in the string
-                        currentLocation = functionInfo.NewLocation;
+                        functionInfo = GetFunction(lines, currentLineIndex);
+                        currentLineIndex = functionInfo.EndIndex;
                         if (dependencyPropertySetFunctions.Contains(functionInfo.Name) == false) // this is a generated function
                         {
-                            nonPropertyCode.Append(functionInfo.Code);
+                            if (currentComment != "") nonPropertyCode.Add(currentComment);
+                            nonPropertyCode.Add(functionInfo.Code);
                         }
                         else
                         {
                             Debug.WriteLine($"threw away {line}");
                         }
+                        currentComment = "";
                         continue;
 
                     }
@@ -191,40 +204,104 @@ namespace PropertyWizard
                         break; // stop if we find a second class
 
                     }
-                    nonPropertyCode.Append(line + nl);
+                    if (currentComment != "") nonPropertyCode.Add(currentComment);
+                    nonPropertyCode.Add(line);
                     foundFirstClass = true;
+                    currentComment = "";
                     continue;
                 }
                 else if (line.Contains(";"))
                 {
+                    if (line.Contains("=>")) // there is both a ";" and a "=>"...this is a property of the form "public int Test => _test;" -- this is a get only function
+                    {
+                        model = ParseExpressionBodiedProperty(line);
+                        parsedInfo.PropertyList.Add(model);
+                        currentComment = "";
+                        continue;
+                    }
                     // this is a simple declartion like "bool _parsing = true;" or "bool _parsing;" ==> properties cannnot have a ";" at the end of their declations
-                    nonPropertyCode.Append(line);
+                    if (currentComment != "") nonPropertyCode.Add(currentComment);
+                    nonPropertyCode.Add(line);
+                    currentComment = "";
                     continue;
                 }
                 //
                 // if we get here we have a property
 
-                functionInfo = GetFunction(toParse, oldLoc);
-                currentLocation = functionInfo.NewLocation;
+                functionInfo = GetFunction(lines, currentLineIndex);
+                currentLineIndex = functionInfo.EndIndex;
                 // Debug.WriteLine($"{property}");
                 if (functionInfo.Code.Contains("GetValue"))
                 {
                     // this  is a dependency property that we don't need -- throw it away.
+                    currentComment = "";
                     continue;
                 }
                 Debug.WriteLine($"it is a normal property named {functionInfo.Name} type is: {functionInfo.FunctionType}");
                 model = ParseProperty(functionInfo, toParse);
                 if (model != null)
                 {
+                    model.Comment = currentComment;
                     parsedInfo.PropertyList.Add(model);
+                    currentComment = "";
                     continue;
                 }
 
                 Debug.WriteLine($"have unparsed code! {line}");
 
             }
-            parsedInfo.NoProperties = nonPropertyCode.ToString();
+            //
+            //  remove all the Field declare lines
+            //  
+            foreach (var prop in parsedInfo.PropertyList)
+            {
+                if (prop.FieldDeclareLine != "")
+                {
+                    for (int i = 0; i < nonPropertyCode.Count; i++)
+                    {
+                        if (nonPropertyCode[i].IndexOf(prop.FieldDeclareLine) != -1)
+                        {
+                            nonPropertyCode[i] = nonPropertyCode[i].Replace(prop.FieldDeclareLine, "");
+                            break;
+                        }
+
+                    }
+                }
+            }
+            //
+            //  we called .Trim() on each line -- this puts the indents back (4 spaces for a tab), but nothing else
+            //
+            parsedInfo.NoProperties = Beautify(nonPropertyCode);
             return parsedInfo;
+        }
+
+        private static int BeautifyOneLine(StringBuilder sb, string line, int curlyCount)
+        {
+            int cc = curlyCount;
+            if (line.StartsWith("}")) cc--;
+            sb.Append(new string(' ', 4 * cc));
+            sb.Append(line);
+            sb.Append('\r');
+            if (line.StartsWith("{")) cc++;
+            return cc;
+        }
+
+        //
+        //  my list can have some single line and some multiline strings...
+        private static string Beautify(List<string> lines)
+        {
+            int curlyCount = 0;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < lines.Count; i++)
+            {
+                var tokens = lines[i].Split("\r", StringSplitOptions.RemoveEmptyEntries);
+                foreach (var l in tokens)
+                {
+                    curlyCount = BeautifyOneLine(sb, l, curlyCount);
+                }
+
+            }
+            return sb.ToString();
         }
         private static (int oldLoc, int newLoc) GetLine(string toParse, int start, out string line)
         {
@@ -243,45 +320,113 @@ namespace PropertyWizard
         }
         //
         //  is the code at location inside toParse part of a comment?
-        private static int InsideComment(string toParse, int location)
+        //
+        //  look for
+        //  1. current line starts with //
+        //  2. previous lines have a /*
+        //
+        //  stop if we see a */ - this means we scan to the top of the file.  We could cache the last time we scanned and stop at that point, but doesn't seem worth it.
+        //
+        //  returns: 
+        //              the index for the line that the comment ends
+        //              a string with the full comment
+        //
+        //              endIndex = -1 and comment = "" when it is not inside a comment
+        //
+        //  ASSUMES:  
+        //              1. all lines have already called Trim()
+        //              2. we do not look for lines that have /* -------------- */ comments in them (yet)
+        //              3. we assume that /* is the first characters in the line 
+        //
+        private static (int endIndex, string comment) GetComment(string[] lines, int index)
         {
-            int index = location + 1; // this will guarantee that we have two non-empty chars to start with...
-            string line = "";
-            while (toParse[index] != '\r' && index > 0)
+            if (index < 0) throw new Exception("index into array cannot be negative!");
+            if (lines[index].StartsWith("//")) return (index, lines[index]);
+            string nl = "\r";
+            for (int start = index; start >= 0; start--)
             {
-                line = toParse[index].ToString() + line;
-                index--;  // go to previous line break
+
+                if (lines[start].StartsWith("/*"))
+                {
+                    // i is the starting line
+                    for (int end = index; end < lines.Length; end++)
+                    {
+                        if (lines[end].Contains("*/"))
+                        {
+                            string comment = "";
+
+                            for (int k = start; k <= end; k++)
+                            {
+                                comment += (lines[k] + nl);
+                            }
+                            return (end, comment);
+                        }
+                    }
+
+                }
+                if (lines[start].Contains("*/"))
+                {
+                    return (-1, "");
+                }
+
             }
 
-            line = line.TrimStart();
-            // Debug.WriteLine($"Line={line}");
-
-
-
-            if (line.Length > 2 && line.Substring(0, 2) == "//")
-                return index;
-            /*
-             *
-             * 
-              if you have something like this get then you are in a comment
-              
-             * 
-             */
-            line = "";
-            for (; ; )
-            {
-                if ((toParse[index] == '/' && toParse[index + 1] == '*')) return index;
-                if (toParse[index] == '*' && toParse[index + 1] == '/') return -1;
-                if (index == 0) return -1;
-
-                line = toParse[index].ToString() + line;
-                index--;  // go to previous line break
-            }
-
+            return (-1, "");
         }
 
+        /// <summary>
+        /// Given a line in the form of
+        ///  
+        ///  public __TYPE__ __PROPERTYNAME__ => __DEFAULT__;
+        ///     *or*
+        ///  private __TYPE__ __PROPERTYNAME__ => __DEFAULT__;
+        ///  
+        ///     ASSUMES:
+        ///         1. line starts with public or private
+        ///         2. the order is as above
+        ///         3. spaces are slitters
+        ///         4. there are exactly the number of tokens as abovew
+        /// </summary>
+        private static PropertyModel ParseExpressionBodiedProperty(string line)
+        {
+            var tokens = line.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Length < 5)
+            {
+                return null;
+            }
 
-        // public __TYPE__ __PROPERTYNAME__ { get;set; } = __DEFAULT__ where set is optional.
+            if (tokens[0] != "public" && tokens[0] != "private")
+            {
+                return null;
+            }
+            var model = new PropertyModel
+            {
+                HasSetter = false,
+                PropertyType = tokens[1],
+                PropertyName = tokens[2],
+                Default = tokens[4]
+            };
+
+
+            return model;
+        }
+
+        //
+        //  Given a line in the form of: 
+        //
+        //      public __TYPE__ __PROPERTYNAME__ { get;set; } = __DEFAULT__ where set is optional.
+        // or
+        //      private __TYPE__ __PROPERTYNAME__ { get;set; } = __DEFAULT__ where set is optional.
+        //
+        //      parse into a PropertyModel
+        //
+        //  ASSUMES
+        //              1. there is no "=" except for the assignment = (e.g. we would error on "public string Foo {get;set;} = "=";
+        //              2. line starts with __TYPE__, public, or private
+        //
+        //  RETURNS 
+        //              PropertyModel
+        //
         private static PropertyModel ParseOneLiner(string line)
         {
             var tokens = line.Split(" ", StringSplitOptions.RemoveEmptyEntries);
@@ -290,10 +435,18 @@ namespace PropertyWizard
                 return null;
             }
 
-            var model = new PropertyModel();
-            model.HasSetter = line.Contains("set;");
-            model.PropertyType = tokens[1];
-            model.PropertyName = tokens[2];
+            int typeIndex = 1;
+            if (tokens[0] != "public" && tokens[0] != "private")
+            {
+                typeIndex = 0;
+            }
+
+            var model = new PropertyModel
+            {
+                HasSetter = line.Contains("set;"),
+                PropertyType = tokens[typeIndex],
+                PropertyName = tokens[typeIndex + 1]
+            };
             tokens = line.Split("=", StringSplitOptions.RemoveEmptyEntries);
             if (tokens.Length == 2)
             {
@@ -308,7 +461,10 @@ namespace PropertyWizard
         // public static readonly DependencyProperty TwelvePercentProperty = DependencyProperty.Register("TwelvePercent", typeof(string), typeof(MainPage), new PropertyMetadata("0 ,(0%)", OnChagePercent));
         //
         // (oldLoc, currentLocation) = ParseDependencyProperty(line, currentLocation, out model);
-        private static PropertyModel ParseDependencyProperty(string allText, string line)
+        //
+        //  ASSUMES
+        //              1. we are NOT in a comment
+        private static PropertyModel ParseDependencyProperty(string allText, string[] lines, int currentIndex)
         {
             //
             //  line looks like "        public static readonly DependencyProperty PropertiesAsTextProperty = DependencyProperty.Register(\"PropertiesAsText\", typeof(string), typeof(MainPage), new PropertyMetadata(\"\"));"
@@ -316,14 +472,13 @@ namespace PropertyWizard
             {
                 IsDependencyProperty = true
             };
+            string line = lines[currentIndex];
             //
             //  get the text passed into .Register            
             int pos1 = line.IndexOf("(");
             int pos2 = line.LastIndexOf(")");
             string parameters = line.Substring(pos1, pos2 - pos1);
-            //
-            //  parameters looks something like "(\"PropertiesAsText\", typeof(string), typeof(MainPage), new PropertyMetadata(\"\")"
-            string setterFunction = "";
+
             //
             //  pick out the first parameter finding text between the first two quotes
             pos1 = parameters.IndexOf("\"");
@@ -358,7 +513,6 @@ namespace PropertyWizard
                     index++;
                 if (pmd[index] == '"')
                 {
-
                     quoteCount++;
                 }
                 if ((pmd[index] == ',' && quoteCount % 2 == 0) || pmd[index] == ')')
@@ -374,55 +528,44 @@ namespace PropertyWizard
                 return model;
             }
 
+            //
+            //  if we get here, we know that we have a change notifictation function
+            //
+
 
 
             pos1 = pmd.LastIndexOf(",");
+            Debug.Assert(pos1 != -1);
+
+
 
             model.ChangeNotification = true;
             model.ChangeNotificationFunction = pmd.Substring(pos1 + 1, pmd.Length - pos1 - 1);
-            /*
-             *   this pulls the name from the DependencyProperty.Register line.  the function will look like:
-             *  
-                private static void TestChanged (DependencyObject d, DependencyPropertyChangedEventArgs e)
-                {
-                    var depPropClass = d as MainPage;
-                    var depPropValue = (string)e.NewValue;
-                    depPropClass?.SetTest(depPropValue);
-                }
-                private void SetTest(string value)
-                {
 
-                }
-
-              * 
-              */
-            var magic = $"depPropClass?.Set{model.PropertyName}(depPropValue);";
-            int userSetLoc = -1;
-            do
-            {
-                userSetLoc = allText.IndexOf(magic, userSetLoc + 1); // but what if this is in a comment like what we have above???
-
-            }
-            while (InsideComment(allText, userSetLoc) != -1);
-
-
-            var paren = allText.IndexOf("(", userSetLoc);
-            int len = "depPropClass?".Length;
-            setterFunction = allText.Substring(userSetLoc + len + 1, paren - len - userSetLoc - 1);
             //
-            //  we now have the name of the function -- find the the set code
+            //  find the 
+            var magic = Templates.DependencyBodyNotify.Replace("__PROPERTYNAME__", model.PropertyName).Trim();
+            magic = magic.Replace("__TYPE__", model.PropertyType);
 
-            magic = "private void " + setterFunction;
-            userSetLoc = -1;
-            do
+            int paren = magic.IndexOf(")");
+            magic = magic.Substring(0, paren + 1);
+
+            // look for the line in the lines array
+            //  the function could be before index!
+            int i;
+            for (i = 0; i < lines.Length; i++)
             {
-                userSetLoc = allText.IndexOf(magic, userSetLoc + 1); // but what if this is in a comment like what we have above???
-
+                if (lines[i].Contains(magic))
+                    break;
             }
-            while (InsideComment(allText, userSetLoc) != -1);
 
+            if (i == lines.Length) // couldn't find it!
+            {
+                Debug.Assert(false, $"we shoudl have fund the {magic} line!");
+                return model;
+            }
 
-            var functionInfo = GetFunction(allText, userSetLoc);
+            var functionInfo = GetFunction(lines, i);
             model.UserSetCode = functionInfo.Code;
 
 
@@ -433,43 +576,46 @@ namespace PropertyWizard
 
         /// <summary>
         ///     given an offset into the file, it will find the function and populate the FunctionInfo object
+        ///     this returns the *whole* function
         /// </summary>
-        /// <param name="toParse"></param>
-        /// <param name="fileLoc"></param>        
-        /// <returns></returns>
-        private static FunctionInfo GetFunction(string toParse, int fileLoc)
+
+        private static FunctionInfo GetFunction(string[] lines, int index)
         {
             int curlyCount = 1;
-            _ = GetLine(toParse, fileLoc, out string line);
-            var functionInfo = ParseFunctionDeclartion(line);
-
-            int pos = toParse.IndexOf("{", fileLoc) + 1;
-            if (pos == -1)
+            var functionInfo = ParseFunctionDeclartion(lines[index]);
+            StringBuilder linesInFunction = new StringBuilder();
+            int i = index;
+            while (true)
             {
-                throw new Exception("this is unexpected. should be a function here!");
+                linesInFunction.Append(lines[i]);
+                linesInFunction.Append("\r");
+                if (lines[i].StartsWith("{")) break;
+                i++;
             }
-            while (pos < toParse.Length)
+            i++;
+
+            for (; i < lines.Length; i++)
             {
-
-
-                if (toParse[pos] == '{')
+                if (lines[i].Contains("{")) curlyCount++;
+                if (lines[i].Contains("}")) curlyCount--;
+                if (curlyCount > 0)
                 {
-                    curlyCount++;
+                    linesInFunction.Append(lines[i]);
+                    linesInFunction.Append("\r");
                 }
-                else if (toParse[pos] == '}')
+                else if (curlyCount == 0)
                 {
-                    curlyCount--;
+                    linesInFunction.Append(lines[i]);
+                    linesInFunction.Append("\r");
+                    break;
                 }
 
 
-                pos++;
-
-                if (curlyCount == 0) break;
             }
 
-            functionInfo.Code = toParse.Substring(fileLoc, pos - fileLoc);
-            functionInfo.OldLocation = fileLoc;
-            functionInfo.NewLocation = pos;
+            functionInfo.Code = linesInFunction.ToString();
+            functionInfo.StartIndex = index;
+            functionInfo.EndIndex = i;
             return functionInfo;
 
         }
@@ -592,17 +738,38 @@ namespace PropertyWizard
             //  i'm using "set".Length and "get".Length here so that I don't have to remember why there is magic "+3" or "-3" sprinkled in this code...
             model.UserGetCode = functionInfo.Code.Substring(startOfGet, endOfGet - startOfGet).Trim();
 
-            int returnPos = model.UserGetCode.IndexOf("return");
-            int eolPos = model.UserGetCode.IndexOf(";", returnPos);
-            model.FieldName = model.UserGetCode.Substring(returnPos + "return".Length, eolPos - returnPos - "return".Length).Trim();
+            // 
+            //  look for expressions of the form get => __DEFUALT__
 
+            if (model.UserGetCode.Contains("=>"))
+            {
+                var tokens = model.UserGetCode.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+                if (tokens.Length == 3)
+                {
+                    model.FieldName = tokens[2];
+                }
+            }
+            else
+            {
+
+                int returnPos = model.UserGetCode.IndexOf("return");
+                int eolPos = model.UserGetCode.IndexOf(";", returnPos);
+                model.FieldName = model.UserGetCode.Substring(returnPos + "return".Length, eolPos - returnPos - "return".Length).Trim();
+            }
             string declareLine = $"{model.PropertyType} {model.FieldName} = ";
             int fieldDeclarePos = toParse.IndexOf(declareLine);
-            Debug.Assert(fieldDeclarePos != -1, "field names must be declared!");
-            if (fieldDeclarePos != -1)
+
+            if (fieldDeclarePos != -1) // this might be -1 if the field is declared in a different file...
             {
                 int semiPos = toParse.IndexOf(";", fieldDeclarePos);
+                int lineStart = fieldDeclarePos;
+                while (toParse[lineStart] != '\r')
+                {
+                    lineStart--;
+                }
+                lineStart++;
                 model.Default = toParse.Substring(fieldDeclarePos + declareLine.Length, semiPos - declareLine.Length - fieldDeclarePos).Trim();
+                model.FieldDeclareLine = toParse.Substring(lineStart, semiPos - lineStart + 1).Trim();
             }
             if (model.HasSetter)
             {
